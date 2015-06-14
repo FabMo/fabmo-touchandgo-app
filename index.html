@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FabMo Touch and Go</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+  </head>
+  <body>
+    <script src="js/jquery.js"></script>
+    <div class="container">
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li><a href="#help" role="tab" data-toggle="tab">Home</a></li>
+        <li class="active"><a href="#settings" role="tab" data-toggle="tab">Settings</a></li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- Welcome/help pane -->
+        <div role="tabpanel" class="tab-pane active" id="help">
+          <div style="padding-top:30px; text-align: center;">
+            <canvas width="480" height="360" style="border: 1px solid gray;" id="toolcanvas"></canvas>
+          </div>
+        </div>
+
+    
+        <!-- Jobs Pane -->
+        <div role="tabpanel" class="tab-pane" id="settings">
+          <!-- Responsive form for inputting circle parameters -->
+          <div class="form-horizontal" style="padding-top:20px;">
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="toolxsize">Tool Size (X)</label>
+              <div class="col-sm-10">
+                <input type="email" class="form-control" id="toolxsize" placeholder="8">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="toolysize">Tool Size (Y)</label>
+              <div class="col-sm-10">
+                <input type="email" class="form-control" id="toolysize" placeholder="4">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="toolysize">Major Grid</label>
+              <div class="col-sm-10">
+                <input type="email" class="form-control" id="toolysize" placeholder="1">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="toolysize">Minor Grid</label>
+              <div class="col-sm-10">
+                <input type="email" class="form-control" id="toolysize" placeholder="0.25">
+              </div>
+            </div>
+
+          </div> <!-- form-horizontal -->
+        </div> <!-- tab pane -->
+      </div> <!-- tab content -->
+    </div><!-- container -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script type="text/javascript">
+        function ToolDisplay(canvas, options) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+          options = options || {};
+          this.gridMajor = options['gridMajor'] || 4.0;
+          this.gridMinor = options['gridMinor'] || 1.0;
+          this.gridMajorColor = options['gridMajorColor'] || '#3399ff';
+          this.gridMinorColor = options['gridMinorColor'] || '#ccffff';
+          this.actualWidth = options['width'] || 24.0;
+          this.actualHeight = options['height'] || 18.0;
+          this.options = options;
+          this.zoom = 1.0;
+        }
+
+        ToolDisplay.prototype.drawGrid = function() {
+          var w = this.canvas.width;
+          var h = this.canvas.height;
+          var aw = this.actualWidth;
+          var ah = this.actualHeight;
+
+          scalex = w/aw;
+          scaley = h/ah;
+
+          this.ctx.strokeStyle=this.gridMinorColor;
+          for(x=0; x<=aw; x+=this.gridMinor) {
+            this.ctx.moveTo(x*scalex,0);
+            this.ctx.lineTo(x*scalex,h);
+            this.ctx.stroke();
+          }
+
+          for(y=0; y<=ah; y+=this.gridMinor) {
+            this.ctx.moveTo(0,y*scaley);
+            this.ctx.lineTo(w,y*scaley);
+            this.ctx.stroke();
+          }
+
+          console.log(this.gridMajor)
+          this.ctx.strokeStyle=this.gridMajorColor;
+          for(x=0; x<=aw; x+=this.gridMajor) {
+            this.ctx.moveTo(x*scalex,0);
+            this.ctx.lineTo(x*scalex,h);
+            this.ctx.stroke();
+          }
+
+          for(y=0; y<=ah; y+=this.gridMajor) {
+            this.ctx.moveTo(0,y*scaley);
+            this.ctx.lineTo(w,y*scaley);
+            this.ctx.stroke();
+          }
+        }
+
+        // Prevent a stray enter key from inadvertently submitting a form (and setting the tool in motion!)
+        $(document).ready(function() {
+          display = new ToolDisplay(document.getElementById('toolcanvas'), {});
+          display.drawGrid();
+        });
+    </script>
+  </body>
+</html>
