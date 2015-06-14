@@ -1,10 +1,10 @@
 {
-	"name":"Example App",
+	"name":"Touch and Go",
 	"main":"./index.html",
 	"icon":"icon.png",
-	"icon_color":"navy",
+	"icon_color":"gray",
 	"version":"0.0.1",
 	"author":"Ryan Sturmer",
-	"website":"http://www.shopbottools.com",
-	"description":"Demo app from the Fabmo developer kit"
+	"website":"http://www.ryansturmer.com",
+	"description":"Quick tool navigation using a clickable/touchable interface."
 }

@@ -13,14 +13,14 @@
     <div class="container">
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
-        <li><a href="#help" role="tab" data-toggle="tab">Home</a></li>
-        <li class="active"><a href="#settings" role="tab" data-toggle="tab">Settings</a></li>
+        <li class="active"><a href="#tool" role="tab" data-toggle="tab">Tool</a></li>
+        <li><a href="#settings" role="tab" data-toggle="tab">Settings</a></li>
       </ul>
 
       <div class="tab-content">
         <!-- Welcome/help pane -->
-        <div role="tabpanel" class="tab-pane active" id="help">
-          <div style="padding-top:30px; text-align: center;">
+        <div role="tabpanel" class="tab-pane active" id="tool">
+          <div style="padding-top:30px; text-align: center; width: 100%">
             <canvas width="480" height="360" style="border: 1px solid gray;" id="toolcanvas"></canvas>
           </div>
         </div>
@@ -33,27 +33,41 @@
             <div class="form-group">
               <label class="control-label col-sm-2" for="toolxsize">Tool Size (X)</label>
               <div class="col-sm-10">
-                <input type="email" class="form-control" id="toolxsize" placeholder="8">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="control-label col-sm-2" for="toolysize">Tool Size (Y)</label>
-              <div class="col-sm-10">
-                <input type="email" class="form-control" id="toolysize" placeholder="4">
+                <div class="input-group">
+                  <input type="number" class="form-control num-input" id="width" placeholder="Size of the working area (X)" value="24">
+                  <span class="input-group-addon">in</span>
+                </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="control-label col-sm-2" for="toolysize">Major Grid</label>
+              <label class="control-label col-sm-2" for="toolysize">Tool Size (Y)</label>
               <div class="col-sm-10">
-                <input type="email" class="form-control" id="toolysize" placeholder="1">
+                <div class="input-group">
+                  <input type="number" class="form-control num-input" id="height" placeholder="Size of the working area (Y)" value="18">
+                  <span class="input-group-addon">in</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="majorgrid">Major Grid</label>
+              <div class="col-sm-10">
+                <div class="input-group">
+                  <input type="number" class="form-control num-input" id="gridMajor" placeholder="Major grid spacing" value="4">
+                  <span class="input-group-addon">in</span>
+                </div>
               </div>
             </div>
 
             <div class="form-group">
               <label class="control-label col-sm-2" for="toolysize">Minor Grid</label>
               <div class="col-sm-10">
-                <input type="email" class="form-control" id="toolysize" placeholder="0.25">
+                  <div class="input-group">
+                    <input type="number" class="form-control num-input" id="gridMinor" placeholder="Minor grid spacing" value="0.25">
+                    <span class="input-group-addon">in</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -63,63 +77,83 @@
     </div><!-- container -->
     <script src="js/bootstrap.min.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/tooldisplay.js"></script>
+
     <script type="text/javascript">
-        function ToolDisplay(canvas, options) {
-          this.canvas = canvas;
-          this.ctx = canvas.getContext("2d");
-          options = options || {};
-          this.gridMajor = options['gridMajor'] || 4.0;
-          this.gridMinor = options['gridMinor'] || 1.0;
-          this.gridMajorColor = options['gridMajorColor'] || '#3399ff';
-          this.gridMinorColor = options['gridMinorColor'] || '#ccffff';
-          this.actualWidth = options['width'] || 24.0;
-          this.actualHeight = options['height'] || 18.0;
-          this.options = options;
-          this.zoom = 1.0;
+        var display;
+
+        function resizeCanvas() {
+          var width = display.canvas.parentElement.offsetWidth;
+          var height = window.innerHeight - display.canvas.offsetTop - 30;
+          var aspect_ratio = display.actualWidth/display.actualHeight;
+
+          var cheight = width*(1/aspect_ratio)
+          var cwidth = height*aspect_ratio;
+          if(cheight <= height) {
+            display.canvas.width = width;
+            display.canvas.height = cheight;            
+          } else {
+            display.canvas.width = cwidth;
+            display.canvas.height = height;
+          }
+          display.draw();
         }
 
-        ToolDisplay.prototype.drawGrid = function() {
-          var w = this.canvas.width;
-          var h = this.canvas.height;
-          var aw = this.actualWidth;
-          var ah = this.actualHeight;
-
-          scalex = w/aw;
-          scaley = h/ah;
-
-          this.ctx.strokeStyle=this.gridMinorColor;
-          for(x=0; x<=aw; x+=this.gridMinor) {
-            this.ctx.moveTo(x*scalex,0);
-            this.ctx.lineTo(x*scalex,h);
-            this.ctx.stroke();
-          }
-
-          for(y=0; y<=ah; y+=this.gridMinor) {
-            this.ctx.moveTo(0,y*scaley);
-            this.ctx.lineTo(w,y*scaley);
-            this.ctx.stroke();
-          }
-
-          console.log(this.gridMajor)
-          this.ctx.strokeStyle=this.gridMajorColor;
-          for(x=0; x<=aw; x+=this.gridMajor) {
-            this.ctx.moveTo(x*scalex,0);
-            this.ctx.lineTo(x*scalex,h);
-            this.ctx.stroke();
-          }
-
-          for(y=0; y<=ah; y+=this.gridMajor) {
-            this.ctx.moveTo(0,y*scaley);
-            this.ctx.lineTo(w,y*scaley);
-            this.ctx.stroke();
-          }
+        function goToPosition(pos) {
+          var gcode = "G0 X" + pos.x.toFixed(5) + " Y" + pos.y.toFixed(5);
+          fabmoDashboard.runGCode(gcode);
+          
         }
 
-        // Prevent a stray enter key from inadvertently submitting a form (and setting the tool in motion!)
         $(document).ready(function() {
-          display = new ToolDisplay(document.getElementById('toolcanvas'), {});
-          display.drawGrid();
+          canvas = document.getElementById('toolcanvas');
+          display = new ToolDisplay(canvas, {});
+          
+          window.addEventListener('resize', resizeCanvas);
+
+          display.on('click', function(pos) {
+            goToPosition(pos);
+          });
+
+          function validateInput(target) {
+            var f = parseFloat(target.val());
+            if(isNaN(f) || f === undefined) {
+                target.parent().removeClass('has-success');
+                target.parent().addClass('has-error');
+                return null;
+            } else {
+                target.parent().removeClass('has-error');
+                target.parent().addClass('has-success');
+                return f;
+            }
+          }
+
+          // Trigger a validation every time an input value changes
+          $(".num-input").change(function(evt) {
+            var target = $(evt.target);
+            var id = target.attr('id');
+            value = validateInput(target);
+            options = {};
+            options[id] = value;
+            display.setOptions(options);
+          });
+
+          $(".num-input").each(function(i) {validateInput($(this)); });
+
+          $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            resizeCanvas();
+          });
+
+          fabmoDashboard.on('status', function(status) {
+            x = status.posx || -1;
+            y = status.posy || -1;
+            display.setCurrentLocation(x,y);
+          });
+
+          resizeCanvas();
         });
+
+
     </script>
   </body>
 </html>
