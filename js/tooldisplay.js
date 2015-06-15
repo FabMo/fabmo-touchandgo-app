@@ -12,18 +12,17 @@
         ToolDisplay.prototype.setOptions = function(options) {
           options = options || {};
 
-          this.gridMajor = options['gridMajor'] || this.options['gridMajor'] || 4.0;
-          this.gridMinor = options['gridMinor'] || this.options['gridMinor'] || 0.5;
-          this.gridMajorColor = options['gridMajorColor'] || this.options['gridMajorColor'] || '#99ccff';
-          this.gridMinorColor = options['gridMinorColor'] || this.options['gridMinorColor'] || '#99ccff';
+          this.gridMajor = options['gridMajor'] || this.options['gridMajor'] || 1.0;
+          this.gridMinor = options['gridMinor'] || this.options['gridMinor'] || 0.25;
+          this.gridMajorColor = options['gridMajorColor'] || this.options['gridMajorColor'] || '#3399ff';
+          this.gridMinorColor = options['gridMinorColor'] || this.options['gridMinorColor'] || '#ccccff';
           this.currentLocationColor = options['currentLocationColor'] || this.options['currentLocationColor'] || 'green';
           this.targetLocationColor = options['targetLocationColor'] || this.options['targetLocationColor'] || 'red';
-          this.actualWidth = options['width'] || this.options['width'] || 24.0;
-          this.actualHeight = options['height'] || this.options['height'] || 18.0;
+          this.actualWidth = options['width'] || this.options['width'] || 6.0;
+          this.actualHeight = options['height'] || this.options['height'] || 8.0;
           for(key in options) {
             this.options[key] = options[key];
           }
-          console.log(options);
           this.currentLocation = null;
           this.targetLocation = null;
         }

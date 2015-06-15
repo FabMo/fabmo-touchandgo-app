@@ -34,7 +34,7 @@
               <label class="control-label col-sm-2" for="toolxsize">Tool Size (X)</label>
               <div class="col-sm-10">
                 <div class="input-group">
-                  <input type="number" class="form-control num-input" id="width" placeholder="Size of the working area (X)" value="24">
+                  <input type="number" class="form-control num-input" id="width" placeholder="Size of the working area (X)" value="6">
                   <span class="input-group-addon">in</span>
                 </div>
               </div>
@@ -44,7 +44,7 @@
               <label class="control-label col-sm-2" for="toolysize">Tool Size (Y)</label>
               <div class="col-sm-10">
                 <div class="input-group">
-                  <input type="number" class="form-control num-input" id="height" placeholder="Size of the working area (Y)" value="18">
+                  <input type="number" class="form-control num-input" id="height" placeholder="Size of the working area (Y)" value="8">
                   <span class="input-group-addon">in</span>
                 </div>
               </div>
@@ -54,7 +54,7 @@
               <label class="control-label col-sm-2" for="majorgrid">Major Grid</label>
               <div class="col-sm-10">
                 <div class="input-group">
-                  <input type="number" class="form-control num-input" id="gridMajor" placeholder="Major grid spacing" value="4">
+                  <input type="number" class="form-control num-input" id="gridMajor" placeholder="Major grid spacing" value="1.0">
                   <span class="input-group-addon">in</span>
                 </div>
               </div>
@@ -138,7 +138,14 @@
             display.setOptions(options);
           });
 
-          $(".num-input").each(function(i) {validateInput($(this)); });
+          $(".num-input").each(function(i) {
+            var target = $(this);
+            var id = target.attr('id');
+            value = validateInput(target);
+            options = {};
+            options[id] = value;
+            display.setOptions(options);
+          });
 
           $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             resizeCanvas();
