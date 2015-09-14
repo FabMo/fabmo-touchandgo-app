@@ -1,3 +1,29 @@
-body {
-	margin-top: 10px;
+.left-toolbox {
+	top: 10px;
+	left: 10px;
+	position: absolute;
+	z-index: 1;
+}
+
+.right-toolbox {
+	top: 10px;
+	right: 10px;
+	position: absolute;
+	z-index: 1;
+}
+
+
+.button {
+	width: 50px;
+	height: 50px;
+	cursor: pointer;
+}
+
+.snap-button {
+	background-image: url("../img/snap.png");
+	background-size: cover;
+}
+
+.disabled {
+	opacity: 0.4;
 }

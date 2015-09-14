@@ -9,155 +9,51 @@
     <link href="css/style.css" rel="stylesheet">
   </head>
   <body>
-    <script src="js/jquery.js"></script>
-    <div class="container">
-      <!-- Nav tabs -->
-      <ul class="nav nav-tabs" role="tablist">
-        <li class="active"><a href="#tool" role="tab" data-toggle="tab">Tool</a></li>
-        <li><a href="#settings" role="tab" data-toggle="tab">Settings</a></li>
-      </ul>
-
-      <div class="tab-content">
-        <!-- Welcome/help pane -->
-        <div role="tabpanel" class="tab-pane active" id="tool">
-          <div style="padding-top:30px; text-align: center; width: 100%">
-            <canvas width="480" height="360" style="border: 1px solid gray;" id="toolcanvas"></canvas>
-          </div>
-        </div>
-
+      <div id="container">
+        <canvas width="100" height="100" id="toolcanvas"></canvas>
+        <div class="right-toolbox">
+        <div id="snap-button" class="button snap-button disabled"></div>
+        <div class="button home-button"></div>
+        </div>        
+      </div>
     
-        <!-- Jobs Pane -->
-        <div role="tabpanel" class="tab-pane" id="settings">
-          <!-- Responsive form for inputting circle parameters -->
-          <div class="form-horizontal" style="padding-top:20px;">
-            <div class="form-group">
-              <label class="control-label col-sm-2" for="toolxsize">Tool Size (X)</label>
-              <div class="col-sm-10">
-                <div class="input-group">
-                  <input type="number" class="form-control num-input" id="width" placeholder="Size of the working area (X)" value="6">
-                  <span class="input-group-addon">in</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="control-label col-sm-2" for="toolysize">Tool Size (Y)</label>
-              <div class="col-sm-10">
-                <div class="input-group">
-                  <input type="number" class="form-control num-input" id="height" placeholder="Size of the working area (Y)" value="8">
-                  <span class="input-group-addon">in</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="control-label col-sm-2" for="majorgrid">Major Grid</label>
-              <div class="col-sm-10">
-                <div class="input-group">
-                  <input type="number" class="form-control num-input" id="gridMajor" placeholder="Major grid spacing" value="1.0">
-                  <span class="input-group-addon">in</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="control-label col-sm-2" for="toolysize">Minor Grid</label>
-              <div class="col-sm-10">
-                  <div class="input-group">
-                    <input type="number" class="form-control num-input" id="gridMinor" placeholder="Minor grid spacing" value="0.25">
-                    <span class="input-group-addon">in</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div> <!-- form-horizontal -->
-        </div> <!-- tab pane -->
-      </div> <!-- tab content -->
-    </div><!-- container -->
+    <script src="js/jquery.js"></script>    
     <script src="js/bootstrap.min.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/tooldisplay.js"></script>
 
     <script type="text/javascript">
         var display;
+        var snapEnabled = false;
 
         function resizeCanvas() {
-          var width = display.canvas.parentElement.offsetWidth;
-          var height = window.innerHeight - display.canvas.offsetTop - 30;
-          var aspect_ratio = display.actualWidth/display.actualHeight;
-
-          var cheight = width*(1/aspect_ratio)
-          var cwidth = height*aspect_ratio;
-          if(cheight <= height) {
-            display.canvas.width = width;
-            display.canvas.height = cheight;            
-          } else {
-            display.canvas.width = cwidth;
-            display.canvas.height = height;
-          }
+          var container= document.getElementById("container");
+          container.style.height=window.innerHeight;
+          container.style.width=window.innerWidth;
+          display.canvas.width = window.innerWidth;
+          display.canvas.height = window.innerHeight;
           display.draw();
         }
 
-        function goToPosition(pos) {
-          var gcode = "G0 X" + pos.x.toFixed(5) + " Y" + pos.y.toFixed(5);
-          fabmoDashboard.runGCode(gcode);
-          
+        function setupControls() {
+          $('.snap-button').click(function(evt) {
+            if(snapEnabled) {
+              $('#snap-button').addClass('disabled');
+            } else {
+              $('#snap-button').removeClass('disabled');
+            }
+            snapEnabled = !snapEnabled;
+          });
         }
+
 
         $(document).ready(function() {
           canvas = document.getElementById('toolcanvas');
-          display = new ToolDisplay(canvas, {});
-          
+          display = new Grid(canvas, {});
           window.addEventListener('resize', resizeCanvas);
-
-          display.on('click', function(pos) {
-            goToPosition(pos);
-          });
-
-          function validateInput(target) {
-            var f = parseFloat(target.val());
-            if(isNaN(f) || f === undefined) {
-                target.parent().removeClass('has-success');
-                target.parent().addClass('has-error');
-                return null;
-            } else {
-                target.parent().removeClass('has-error');
-                target.parent().addClass('has-success');
-                return f;
-            }
-          }
-
-          // Trigger a validation every time an input value changes
-          $(".num-input").change(function(evt) {
-            var target = $(evt.target);
-            var id = target.attr('id');
-            value = validateInput(target);
-            options = {};
-            options[id] = value;
-            display.setOptions(options);
-          });
-
-          $(".num-input").each(function(i) {
-            var target = $(this);
-            var id = target.attr('id');
-            value = validateInput(target);
-            options = {};
-            options[id] = value;
-            display.setOptions(options);
-          });
-
-          $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            resizeCanvas();
-          });
-
-          fabmoDashboard.on('status', function(status) {
-            x = status.posx || -1;
-            y = status.posy || -1;
-            display.setCurrentLocation(x,y);
-          });
-
           resizeCanvas();
+          setupControls();
+          display.draw();
         });
 
 
