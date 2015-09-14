@@ -1,3 +1,21 @@
+function closest (num, arr) {
+    var curr = arr[0];
+    var diff = Math.abs (num - curr);
+    for (var val = 0; val < arr.length; val++) {
+        var newdiff = Math.abs (num - arr[val]);
+        if (newdiff < diff) {
+            diff = newdiff;
+            curr = arr[val];
+        }
+    }
+    return curr;
+}
+
+function snap(num, multiple) {
+  var ticks = Math.round(num/multiple);
+  return ticks*multiple;
+}
+
  function Grid(canvas, options) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
@@ -16,15 +34,13 @@
     canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
     canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
     canvas.addEventListener('mousewheel', this.onMouseWheel.bind(this));
+    canvas.addEventListener('blur', this.onBlur.bind(this));
 
     this.draw();
   }
 
   Grid.prototype.setOptions = function(options) {
     options = options || {};
-
-    this.gridMajor = options['gridMajor'] || this.options['gridMajor'] || 1.0;
-    this.gridMinor = options['gridMinor'] || this.options['gridMinor'] || 0.25;
     this.gridMajorColor = options['gridMajorColor'] || this.options['gridMajorColor'] || '#3399ff';
     this.gridMinorColor = options['gridMinorColor'] || this.options['gridMinorColor'] || '#ccccff';
     this.originColor = options['originColor'] || this.options['originColor'] || 'red';
@@ -34,7 +50,9 @@
     this.actualHeight = options['height'] || this.options['height'] || 8.0;
     this.scaleTextSize = options['scaleTextSize'] || this.options['scaleTextSize'] || 15;
     this.scaleTextFont = options['scaleTextFont'] || this.options['scaleTextFont'] || 'Monospace';
-
+    this.scale = options['scale'] || this.options['scale'] || 100; // pixels per "real" unit
+    this.units = options['units'] || this.options['units'] || 'in';
+    this.unitMode = options['unitMode'] || this.options['unitMode'] || 'decimal';
     this.minScale = 1;
     this.maxScale = 1000;
     for(key in options) {
@@ -43,6 +61,37 @@
     this.scaleTextFontString = this.scaleTextSize + 'px ' + this.scaleTextFont;
     this.currentLocation = null;
     this.targetLocation = null;
+  }
+
+  Grid.prototype.getBestGrid = function() {
+    viewport = this.getActualViewport();
+    vw = this.canvas.width;
+    vh = this.canvas.height;
+    aw = viewport.xmax - viewport.xmin;
+    ah = viewport.ymax - viewport.ymin;
+
+    var scales = [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+
+    var size = Math.max(aw,ah);
+    prev_dist = 0xffffffff;
+    var best_scale = 0.001;
+    scales.forEach(function(scale) {
+      var ticks = size/scale;
+      var dist = Math.abs(ticks-5);
+      if((dist < prev_dist) && (ticks > 2)) {
+        best_scale = scale;
+      }
+      prev_dist = dist;
+    });
+
+    //console.log('ideal grid: ' + ideal);
+    //console.log('actual grid: ' + major)
+
+    var retval = {
+      'major' : best_scale
+    };
+    console.log(retval)
+    return retval;
   }
 
   Grid.prototype.emit = function(name, evt) {
@@ -107,6 +156,10 @@
     evt.preventDefault();
   }
 
+  Grid.prototype.onBlur = function(evt) {
+    this.mouseIsDown = false;
+  }
+
   Grid.prototype.getMousePos = function(evt) {
     var rect = this.canvas.getBoundingClientRect();
     return {
@@ -120,23 +173,33 @@
   }
 
   Grid.prototype.draw = function() {
+    var g = this.getBestGrid();
     this._clear();
-    this._drawGrid();
+    this._drawGrid(g.major);
     this._drawOrigin();
-    this._drawScale();
+    this._drawScale(g.major);
   }
 
-  Grid.prototype._getGridLocations = function() {
+  Grid.prototype.mouseToActual = function(pos) {
+    return {
+      x : (pos.x - this.offset.x)*this.scale,
+      y : (pos.y - this.offset.y)*this.scale
+    }
+  }
+
+  Grid.prototype._getGridLocations = function(spacing) {
     var w = this.canvas.width;
     var h = this.canvas.height;
+
     viewport = this.getActualViewport();
 
-    min_vertical_grid = Math.round(viewport.xmin/this.gridMajor)-1;
-    max_vertical_grid = Math.round(viewport.xmax/this.gridMajor)+1;
-    min_horizontal_grid = Math.round(viewport.ymin/this.gridMajor)-1;
-    max_horizontal_grid = Math.round(viewport.ymax/this.gridMajor)+1;
-    var hlines = max_horizontal_grid - min_horizontal_grid;
-    var vlines = max_vertical_grid - min_vertical_grid;
+    min_vertical_grid = snap(viewport.xmin,spacing)-spacing;
+    max_vertical_grid = snap(viewport.xmax,spacing)+spacing;
+    min_horizontal_grid = snap(viewport.ymin,spacing)-spacing;
+    max_horizontal_grid = snap(viewport.ymax,spacing)+spacing;
+
+    var hlines = (max_horizontal_grid - min_horizontal_grid)/spacing;
+    var vlines = (max_vertical_grid - min_vertical_grid)/spacing;
     var x = (min_vertical_grid+this.offset.x);
     var y = (min_horizontal_grid+this.offset.y);
 
@@ -146,23 +209,24 @@
       ha : [],
       va : []
     }
+
     for(var i=0; i<vlines; i++) {
       var xs = x*this.scale;
       retval.v.push(xs);
-      retval.va.push(min_vertical_grid + i*this.gridMajor);
-      x+=this.gridMajor;
+      retval.va.push(min_vertical_grid + i*spacing);
+      x+=spacing;
     }
 
     for(var i=0; i<hlines; i++) {
       var ys = y*this.scale;
       retval.h.push(h-ys);
-      retval.ha.push(min_horizontal_grid + i*this.gridMajor);
-      y+=this.gridMajor;
+      retval.ha.push(min_horizontal_grid + i*spacing);
+      y+=spacing;
     }
     return retval;
   }
 
-  Grid.prototype._drawGrid = function() {
+  Grid.prototype._drawGrid = function(spacing) {
     var w = this.canvas.width;
     var h = this.canvas.height;
 
@@ -170,7 +234,7 @@
     this.ctx.beginPath();
     this.ctx.strokeStyle = this.gridMajorColor;
 
-    grid = this._getGridLocations();
+    grid = this._getGridLocations(spacing);
 
     grid.h.forEach(function(y) {
       this.ctx.moveTo(0, y);
@@ -187,18 +251,21 @@
 
   }
 
-  Grid.prototype._drawScale = function() {
+  Grid.prototype._drawScale = function(spacing) {
     var w = this.canvas.width;
     var h = this.canvas.height;
 
-    grid = this._getGridLocations();
+    grid = this._getGridLocations(spacing);
     this.ctx.font = this.scaleTextFontString;
-    grid = this._getGridLocations();
 
     // Draw horizontal grid labels along the left side
     this.ctx.textAlign = 'left';
     this.ctx.textBaseline = 'middle'
     grid.h.forEach(function(y, idx) {
+
+      if(y > (h-this.scaleTextSize*2)) {
+        return
+      }
       // Create scale text
       var txt = grid.ha[idx].toFixed(2);
       
@@ -218,12 +285,15 @@
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'bottom'
     grid.v.forEach(function(x, idx) {
-      try{
+
+
       var txt = grid.va[idx].toFixed(2);        
-      } catch(e) {
-        console.log(grid)
-      }
+
       m = this.ctx.measureText(txt);
+
+      if(x < m.width*2) {
+        return
+      }
       
       // Clear out underneath text
       this.ctx.clearRect(x-m.width/2.0,h-this.scaleTextSize,m.width, this.scaleTextSize);
