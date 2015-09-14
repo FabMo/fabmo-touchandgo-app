@@ -78,7 +78,7 @@ function snap(num, multiple) {
     scales.forEach(function(scale) {
       var ticks = size/scale;
       var dist = Math.abs(ticks-5);
-      if((dist < prev_dist) && (ticks > 2)) {
+      if((dist < prev_dist)) {
         best_scale = scale;
       }
       prev_dist = dist;
@@ -175,7 +175,8 @@ function snap(num, multiple) {
   Grid.prototype.draw = function() {
     var g = this.getBestGrid();
     this._clear();
-    this._drawGrid(g.major);
+    this._drawGrid(g.major/10.0, this.gridMinorColor);
+    this._drawGrid(g.major, this.gridMajorColor);
     this._drawOrigin();
     this._drawScale(g.major);
   }
@@ -226,13 +227,13 @@ function snap(num, multiple) {
     return retval;
   }
 
-  Grid.prototype._drawGrid = function(spacing) {
+  Grid.prototype._drawGrid = function(spacing, color) {
     var w = this.canvas.width;
     var h = this.canvas.height;
 
     // Setup style
     this.ctx.beginPath();
-    this.ctx.strokeStyle = this.gridMajorColor;
+    this.ctx.strokeStyle = color;
 
     grid = this._getGridLocations(spacing);
 
@@ -248,6 +249,10 @@ function snap(num, multiple) {
 
     //Commit
     this.ctx.stroke();
+
+  }
+
+  Grid.prototype._drawSnap = function() {
 
   }
 
