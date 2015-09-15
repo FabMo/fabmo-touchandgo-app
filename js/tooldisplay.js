@@ -27,7 +27,7 @@ function snap2d(pos, multiple) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.options = {};
-    this.listeners = {};
+    this.listeners = {'snap' : []};
     this.setOptions(options);
     this.lastPos = {
       x : 0,
@@ -35,6 +35,10 @@ function snap2d(pos, multiple) {
     }
     this.scale = 100.0;
     this.offset = {
+      x : 0,
+      y : 0
+    }
+    this.snapPos = {
       x : 0,
       y : 0
     }
@@ -148,7 +152,6 @@ function snap2d(pos, multiple) {
       this.offset.y += (this.lastPos.y - mousePos.y)/this.scale;
     }
     this.draw();
-
     this.lastPos = mousePos;
   }
 
@@ -286,6 +289,10 @@ function snap2d(pos, multiple) {
   Grid.prototype._drawSnap = function() {
     var pos = this.mouseToActual(this.lastPos);
     var spos = snap2d(pos, this.grid.minor);
+    if(spos.x != this.snapPos.x || spos.y != this.snapPos.y) {
+      this.emit('snap', spos);
+    }
+    this.snapPos = spos;
     var dpos = this.actualToMouse(spos);
     var radius = 5;
     this.ctx.beginPath();

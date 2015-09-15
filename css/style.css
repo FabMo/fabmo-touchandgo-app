@@ -24,6 +24,11 @@
 	background-size: cover;
 }
 
+.home-button {
+	background-image: url("../img/home.png");
+	background-size: cover;
+}
+
 .disabled {
 	opacity: 0.4;
 }
