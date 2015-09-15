@@ -16,13 +16,23 @@ function snap(num, multiple) {
   return ticks*multiple;
 }
 
+function snap2d(pos, multiple) {
+  return {
+    x : snap(pos.x, multiple),
+    y : snap(pos.y, multiple)
+  }
+}
+
  function Grid(canvas, options) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.options = {};
     this.listeners = {};
     this.setOptions(options);
-
+    this.lastPos = {
+      x : 0,
+      y : 0
+    }
     this.scale = 100.0;
     this.offset = {
       x : 0,
@@ -55,6 +65,8 @@ function snap(num, multiple) {
     this.unitMode = options['unitMode'] || this.options['unitMode'] || 'decimal';
     this.minScale = 1;
     this.maxScale = 1000;
+    this.snap = false;
+
     for(key in options) {
       this.options[key] = options[key];
     }
@@ -84,13 +96,10 @@ function snap(num, multiple) {
       prev_dist = dist;
     });
 
-    //console.log('ideal grid: ' + ideal);
-    //console.log('actual grid: ' + major)
-
     var retval = {
-      'major' : best_scale
+      'major' : best_scale, 
+      'minor' : best_scale/10.0
     };
-    console.log(retval)
     return retval;
   }
 
@@ -137,8 +146,9 @@ function snap(num, multiple) {
     if(this.mouseIsDown) {
       this.offset.x -= (this.lastPos.x - mousePos.x)/this.scale;
       this.offset.y += (this.lastPos.y - mousePos.y)/this.scale;
-      this.draw();
     }
+    this.draw();
+
     this.lastPos = mousePos;
   }
 
@@ -148,10 +158,21 @@ function snap(num, multiple) {
   }
 
   Grid.prototype.onMouseWheel = function(evt) {
+    var last_scale = this.scale;
+    var old_position = this.mouseToActual(this.lastPos);
+
     this.scale -= 0.1*evt.wheelDelta;
     this.scale = this.scale < this.minScale ? this.minScale : this.scale;
     this.scale = this.scale > this.maxScale ? this.maxScale : this.scale;
 
+    var new_position = this.mouseToActual(this.lastPos);
+
+    dx = new_position.x - old_position.x
+    dy = new_position.y - old_position.y
+
+    this.offset.x += dx;
+    this.offset.y += dy;
+    console.log(dx,dy)
     this.draw();
     evt.preventDefault();
   }
@@ -173,18 +194,28 @@ function snap(num, multiple) {
   }
 
   Grid.prototype.draw = function() {
-    var g = this.getBestGrid();
+    this.grid = this.getBestGrid();
     this._clear();
-    this._drawGrid(g.major/10.0, this.gridMinorColor);
-    this._drawGrid(g.major, this.gridMajorColor);
+    if(this.snap) {
+      this._drawSnap();      
+    }
+    this._drawGrid(this.grid.minor, this.gridMinorColor);
+    this._drawGrid(this.grid.major, this.gridMajorColor);
     this._drawOrigin();
-    this._drawScale(g.major);
+    this._drawScale(this.grid.major);
   }
 
   Grid.prototype.mouseToActual = function(pos) {
     return {
-      x : (pos.x - this.offset.x)*this.scale,
-      y : (pos.y - this.offset.y)*this.scale
+      x : -this.offset.x + pos.x/this.scale,
+      y : -this.offset.y + (this.canvas.height - pos.y)/this.scale
+    }
+  }
+
+  Grid.prototype.actualToMouse = function(pos) {
+    return {
+      x : (pos.x + this.offset.x)*this.scale,
+      y : this.canvas.height - (pos.y + this.offset.y)*this.scale
     }
   }
 
@@ -253,7 +284,18 @@ function snap(num, multiple) {
   }
 
   Grid.prototype._drawSnap = function() {
+    var pos = this.mouseToActual(this.lastPos);
+    var spos = snap2d(pos, this.grid.minor);
+    var dpos = this.actualToMouse(spos);
+    var radius = 5;
+    this.ctx.beginPath();
+    this.ctx.arc(dpos.x, dpos.y, radius, 0, 2 * Math.PI, false);
+    this.ctx.fillStyle = this.gridMinorColor;
+    this.ctx.fill();
+  }
 
+  Grid.prototype.setSnap = function(onoff) {
+    this.snap = boolean(onoff);
   }
 
   Grid.prototype._drawScale = function(spacing) {
@@ -292,22 +334,38 @@ function snap(num, multiple) {
     grid.v.forEach(function(x, idx) {
 
 
-      var txt = grid.va[idx].toFixed(2);        
+    var txt = grid.va[idx].toFixed(2);        
 
-      m = this.ctx.measureText(txt);
+    m = this.ctx.measureText(txt);
 
-      if(x < m.width*2) {
-        return
-      }
-      
-      // Clear out underneath text
-      this.ctx.clearRect(x-m.width/2.0,h-this.scaleTextSize,m.width, this.scaleTextSize);
-      
-      // Draw
-      this.ctx.fillStyle = '#aaaaaa';      
-      this.ctx.fillText(txt, x, h);
+    if(x < m.width*2) {
+      return
+    }
+    
+    // Clear out underneath text
+    this.ctx.clearRect(x-m.width/2.0,h-this.scaleTextSize,m.width, this.scaleTextSize);
+    
+    // Draw
+    this.ctx.fillStyle = '#aaaaaa';      
+    this.ctx.fillText(txt, x, h);
+
     }.bind(this));
 
+  }
+
+  Grid.prototype.goto = function(pos, time) {
+    var time = time;
+    var step = Math.max(time/1000, 1000/60.0);
+    function move() {
+      time -= step;
+      this.offset.x += 0.01;
+      this.offset.y += 0.02;
+      this.draw();
+      if(time > 0) {
+        setTimeout(move.bind(this), step);
+      }
+    }
+    move.bind(this)();
   }
 
   Grid.prototype._drawOrigin = function() {
