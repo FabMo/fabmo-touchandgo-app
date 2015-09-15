@@ -57,6 +57,7 @@
           });
           window.addEventListener('resize', resizeCanvas);
           resizeCanvas();
+          display.scale = Math.max(display.canvas.width, display.canvas.height)/8.0;
           setupControls();
           display.draw();
         });

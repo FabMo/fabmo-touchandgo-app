@@ -33,10 +33,10 @@ function snap2d(pos, multiple) {
       x : 0,
       y : 0
     }
-    this.scale = 100.0;
+    this.scale = Math.max(this.canvas.width, this.canvas.height)/10.0;
     this.offset = {
-      x : 0,
-      y : 0
+      x : 1,
+      y : 1
     }
     this.snapPos = {
       x : 0,
