@@ -312,6 +312,18 @@ function snap2d(pos, multiple) {
     grid = this._getGridLocations(spacing);
     this.ctx.font = this.scaleTextFontString;
 
+    if(spacing < 0.001) {
+      digits = 4;
+    } else if(spacing < 0.01) {
+      digits = 3;
+    } else if(spacing < 0.1) {
+      digits = 2;
+    } else if(spacing < 10) {
+      digits = 1;
+    } else {
+      digits = 0;
+    }
+
     // Draw horizontal grid labels along the left side
     this.ctx.textAlign = 'left';
     this.ctx.textBaseline = 'middle'
@@ -321,7 +333,7 @@ function snap2d(pos, multiple) {
         return
       }
       // Create scale text
-      var txt = grid.ha[idx].toFixed(2);
+      var txt = grid.ha[idx].toFixed(digits);
       
       // Measure
       m = this.ctx.measureText(txt);
@@ -341,7 +353,7 @@ function snap2d(pos, multiple) {
     grid.v.forEach(function(x, idx) {
 
 
-    var txt = grid.va[idx].toFixed(2);        
+    var txt = grid.va[idx].toFixed(digits);        
 
     m = this.ctx.measureText(txt);
 
