@@ -142,7 +142,6 @@ function snap2d(pos, multiple) {
     var mousePos = this.getMousePos(evt);
     this.draw();
     this.mouseIsDown = false;
-    console.log(this.getActualViewport());
   }
 
   Grid.prototype.onMouseMove = function(evt) {
@@ -175,7 +174,6 @@ function snap2d(pos, multiple) {
 
     this.offset.x += dx;
     this.offset.y += dy;
-    console.log(dx,dy)
     this.draw();
     evt.preventDefault();
   }
