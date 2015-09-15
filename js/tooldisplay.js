@@ -163,7 +163,9 @@ function snap2d(pos, multiple) {
     var last_scale = this.scale;
     var old_position = this.mouseToActual(this.lastPos);
 
-    this.scale -= 0.1*evt.wheelDelta;
+    //this.scale -= 0.005*evt.wheelDelta;
+    s = evt.wheelDelta/5000.0;
+    this.scale *= (1+s)
     this.scale = this.scale < this.minScale ? this.minScale : this.scale;
     this.scale = this.scale > this.maxScale ? this.maxScale : this.scale;
 
