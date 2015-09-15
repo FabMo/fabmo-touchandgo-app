@@ -295,7 +295,7 @@ function snap2d(pos, multiple) {
   }
 
   Grid.prototype.setSnap = function(onoff) {
-    this.snap = boolean(onoff);
+    this.snap = onoff;
   }
 
   Grid.prototype._drawScale = function(spacing) {
