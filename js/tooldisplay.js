@@ -1,3 +1,32 @@
+var EasingFunctions = {
+  // no easing, no acceleration
+  linear: function (t) { return t },
+  // accelerating from zero velocity
+  easeInQuad: function (t) { return t*t },
+  // decelerating to zero velocity
+  easeOutQuad: function (t) { return t*(2-t) },
+  // acceleration until halfway, then deceleration
+  easeInOutQuad: function (t) { return t<.5 ? 2*t*t : -1+(4-2*t)*t },
+  // accelerating from zero velocity 
+  easeInCubic: function (t) { return t*t*t },
+  // decelerating to zero velocity 
+  easeOutCubic: function (t) { return (--t)*t*t+1 },
+  // acceleration until halfway, then deceleration 
+  easeInOutCubic: function (t) { return t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1 },
+  // accelerating from zero velocity 
+  easeInQuart: function (t) { return t*t*t*t },
+  // decelerating to zero velocity 
+  easeOutQuart: function (t) { return 1-(--t)*t*t*t },
+  // acceleration until halfway, then deceleration
+  easeInOutQuart: function (t) { return t<.5 ? 8*t*t*t*t : 1-8*(--t)*t*t*t },
+  // accelerating from zero velocity
+  easeInQuint: function (t) { return t*t*t*t*t },
+  // decelerating to zero velocity
+  easeOutQuint: function (t) { return 1+(--t)*t*t*t*t },
+  // acceleration until halfway, then deceleration 
+  easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
+}
+
 function closest (num, arr) {
     var curr = arr[0];
     var diff = Math.abs (num - curr);
@@ -49,8 +78,9 @@ function snap2d(pos, multiple) {
     canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
     canvas.addEventListener('mousewheel', this.onMouseWheel.bind(this));
     canvas.addEventListener('blur', this.onBlur.bind(this));
+    canvas.addEventListener('mouseout', this.onMouseOut.bind(this));
 
-    this.draw();
+    requestAnimationFrame(this.draw.bind(this));
   }
 
   Grid.prototype.setOptions = function(options) {
@@ -150,8 +180,10 @@ function snap2d(pos, multiple) {
       this.offset.x -= (this.lastPos.x - mousePos.x)/this.scale;
       this.offset.y += (this.lastPos.y - mousePos.y)/this.scale;
     }
-    this.draw();
     this.lastPos = mousePos;
+
+    requestAnimationFrame(this.draw.bind(this));
+
   }
 
   Grid.prototype.onMouseDown = function(evt) {
@@ -176,13 +208,24 @@ function snap2d(pos, multiple) {
 
     this.offset.x += dx;
     this.offset.y += dy;
-    this.draw();
     evt.preventDefault();
+    
+    requestAnimationFrame(this.draw.bind(this));
+
   }
 
   Grid.prototype.onBlur = function(evt) {
     this.mouseIsDown = false;
+    this.lastPos = null;
+    requestAnimationFrame(this.draw.bind(this))
   }
+
+  Grid.prototype.onMouseOut = function(evt) {
+    this.mouseIsDown = false;
+    this.lastPos = null;
+    requestAnimationFrame(this.draw.bind(this))
+  }
+
 
   Grid.prototype.getMousePos = function(evt) {
     var rect = this.canvas.getBoundingClientRect();
@@ -287,6 +330,9 @@ function snap2d(pos, multiple) {
   }
 
   Grid.prototype._drawSnap = function() {
+    if(!this.lastPos) {
+      return;
+    }
     var pos = this.mouseToActual(this.lastPos);
     var spos = snap2d(pos, this.grid.minor);
     if(spos.x != this.snapPos.x || spos.y != this.snapPos.y) {
@@ -372,19 +418,44 @@ function snap2d(pos, multiple) {
 
   }
 
-  Grid.prototype.goto = function(pos, time) {
-    var time = time;
-    var step = Math.max(time/1000, 1000/60.0);
-    function move() {
-      time -= step;
-      this.offset.x += 0.01;
-      this.offset.y += 0.02;
-      this.draw();
-      if(time > 0) {
-        setTimeout(move.bind(this), step);
+  Grid.prototype.goto = function(pos, duration, easing_function) {
+    canvas_w = this.canvas.width/this.scale;
+    canvas_h = this.canvas.height/this.scale;
+
+    if(!duration) {
+      this.offset.x = pos.x+0.5*canvas_w;
+      this.offset.y = pos.y+0.5*canvas_h;
+      requestAnimationFrame(this.draw.bind(this));
+      return;
+    }
+
+    var EasingFunction = easing_function || EasingFunctions.easeInOutCubic;
+    
+    var t0 = new Date().getTime();
+    var tf = t0 + duration;
+    var x0 = this.offset.x;
+    var y0 = this.offset.y;
+    var xf = pos.x+0.5*canvas_w;
+    var yf = pos.y+0.5*canvas_h;
+    var dx = xf - x0;
+    var dy = yf - y0;
+
+    function animate() {
+      t = new Date().getTime();
+      ts = (t - t0) / duration;
+      x = x0 + dx*EasingFunction(ts);
+      y = y0 + dy*EasingFunction(ts);
+      if(ts >= 1.0) {
+        this.offset.x = xf;
+        this.offset.y = yf;
+      } else {
+        this.offset.x = x;
+        this.offset.y = y;
+        this.draw();
+        requestAnimationFrame(animate.bind(this));
       }
     }
-    move.bind(this)();
+    requestAnimationFrame(animate.bind(this));
   }
 
   Grid.prototype._drawOrigin = function() {
