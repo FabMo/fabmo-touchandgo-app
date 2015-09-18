@@ -1,3 +1,4 @@
+var CLICK_DETECT_DIST = 5;
 var EasingFunctions = {
   // no easing, no acceleration
   linear: function (t) { return t },
@@ -52,11 +53,22 @@ function snap2d(pos, multiple) {
   }
 }
 
+function dist(a,b) {
+  return Math.sqrt((b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y))
+}
+
+function midpoint(a,b) {
+  return {
+    x: a.x + (b.x - a.x)/2.0,
+    y: a.y + (b.y - a.y)/2.0
+  }
+}
+
  function Grid(canvas, options) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.options = {};
-    this.listeners = {'snap' : []};
+    this.listeners = {'snap' : [], 'click' : []};
     this.setOptions(options);
     this.lastPos = {
       x : 0,
@@ -71,14 +83,28 @@ function snap2d(pos, multiple) {
       x : 0,
       y : 0
     }
+    this.mouseDownPos = {
+      x : 0,
+      y : 0
+    }
     this.dragging = false;
+    this.pinch_dist = null;
 
+    // Touch Events
+    canvas.addEventListener('touchstart', this.onTouchStart.bind(this));
+    canvas.addEventListener('touchend', this.onTouchEnd.bind(this));
+    canvas.addEventListener('touchmove', this.onTouchMove.bind(this));
+    
+    // Mouse Events
     canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
     canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
     canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
-    canvas.addEventListener('mousewheel', this.onMouseWheel.bind(this));
-    canvas.addEventListener('blur', this.onBlur.bind(this));
     canvas.addEventListener('mouseout', this.onMouseOut.bind(this));
+    canvas.addEventListener('mousewheel', this.onMouseWheel.bind(this));
+
+    // Focus events
+    canvas.addEventListener('blur', this.onBlur.bind(this));
+    canvas.addEventListener('focus', this.onFocus.bind(this));
 
     requestAnimationFrame(this.draw.bind(this));
   }
@@ -97,6 +123,7 @@ function snap2d(pos, multiple) {
     this.scale = options['scale'] || this.options['scale'] || 100; // pixels per "real" unit
     this.units = options['units'] || this.options['units'] || 'in';
     this.unitMode = options['unitMode'] || this.options['unitMode'] || 'decimal';
+    this.clearBehindScaleText = options['clearBehindScaleText'] || this.options['clearBehindScaleText'] || true;
     this.minScale = 1;
     this.maxScale = 1000;
     this.snap = false;
@@ -168,36 +195,103 @@ function snap2d(pos, multiple) {
     }
   }
 
-  Grid.prototype.onMouseUp = function(evt) {
-    var mousePos = this.getMousePos(evt);
-    this.draw();
-    this.mouseIsDown = false;
+  Grid.prototype.onTouchStart = function(evt) {
+    if(evt.touches.length == 1) {
+      touch = evt.touches[0];
+      pos = this.getTouchPos(touch);
+      this.lastPos = pos;
+      this.dragging = true;
+    } else if(evt.touches.length == 2) {
+      a = this.getTouchPos(evt.touches[0]);
+      b = this.getTouchPos(evt.touches[1]);
+    }
+    evt.preventDefault();
+    requestAnimationFrame(this.draw.bind(this));
+  }
+
+
+  Grid.prototype.onTouchMove = function(evt) {
+    if(evt.touches.length === 1) {
+      touch = evt.touches[0];
+      pos = this.getTouchPos(touch);
+      if(this.dragging) {
+        this.handleDrag(pos)
+      }
+      this.lastPos = pos;
+    } else if(evt.touches.length === 2) {
+      a = this.getTouchPos(evt.touches[0]);
+      b = this.getTouchPos(evt.touches[1]);
+      c = dist(a,b);
+      if(this.pinch_dist != null) {
+        var factor = (1 + (c-this.pinch_dist)/250.0);
+        this.handleScale(this.pinch_center, factor);
+      }
+      this.pinch_center = this.mouseToActual(midpoint(a,b));
+      this.pinch_dist = c;
+    }
+    evt.preventDefault();
+    requestAnimationFrame(this.draw.bind(this));
+  }
+
+  Grid.prototype.onTouchEnd = function(evt) {
+    this.pinch_dist = null;
+    this.pinch_center = null;
+    if(evt.touches.length === 1) {
+    } else if(evt.touches.length === 2) {
+    }
+    this.dragging = false;
+    evt.preventDefault();
+    requestAnimationFrame(this.draw.bind(this));
+  }
+
+  Grid.prototype.onMouseDown = function(evt) {
+    this.dragging = true;
+    this.lastPos = this.getMousePos(evt);
+    this.mouseDownPos = this.lastPos;
+    evt.preventDefault();
   }
 
   Grid.prototype.onMouseMove = function(evt) {
     var mousePos = this.getMousePos(evt);
-    if(this.mouseIsDown) {
-      this.offset.x -= (this.lastPos.x - mousePos.x)/this.scale;
-      this.offset.y += (this.lastPos.y - mousePos.y)/this.scale;
+    if(this.dragging) {
+      this.handleDrag(mousePos);
+      this.snapPos = null;
+    } else {
+      this.snapPos = mousePos;
     }
     this.lastPos = mousePos;
-
+    evt.preventDefault();
     requestAnimationFrame(this.draw.bind(this));
-
   }
 
-  Grid.prototype.onMouseDown = function(evt) {
-    this.mouseIsDown = true;
-    this.lastPos = this.getMousePos(evt);
+  Grid.prototype.onMouseUp = function(evt) {
+    var mousePos = this.getMousePos(evt);
+    if(dist(mousePos, this.mouseDownPos) < CLICK_DETECT_DIST) {
+      event = {}
+      event.pos = this.mouseToActual(mousePos);
+      event.snapPos = snap2d(event.pos, this.grid.minor);
+      this.emit('click', event);      
+    }
+    this.dragging = false;
+    this.snapPos = null;
+    evt.preventDefault();
+    requestAnimationFrame(this.draw.bind(this));
   }
 
   Grid.prototype.onMouseWheel = function(evt) {
+    var factor = 1 + (evt.wheelDelta/5000.0);
+
+    this.handleScale(this.mouseToActual(this.getMousePos(evt)), factor)
+    evt.preventDefault();
+    
+    requestAnimationFrame(this.draw.bind(this));
+  }
+
+  Grid.prototype.handleScale = function(position, factor) {
     var last_scale = this.scale;
     var old_position = this.mouseToActual(this.lastPos);
 
-    //this.scale -= 0.005*evt.wheelDelta;
-    s = evt.wheelDelta/5000.0;
-    this.scale *= (1+s)
+    this.scale *= factor;
     this.scale = this.scale < this.minScale ? this.minScale : this.scale;
     this.scale = this.scale > this.maxScale ? this.maxScale : this.scale;
 
@@ -208,31 +302,42 @@ function snap2d(pos, multiple) {
 
     this.offset.x += dx;
     this.offset.y += dy;
-    evt.preventDefault();
-    
-    requestAnimationFrame(this.draw.bind(this));
 
   }
 
   Grid.prototype.onBlur = function(evt) {
-    this.mouseIsDown = false;
+    this.dragging = false;
     this.lastPos = null;
     requestAnimationFrame(this.draw.bind(this))
   }
+
+  Grid.prototype.onFocus = function(evt) {}
 
   Grid.prototype.onMouseOut = function(evt) {
-    this.mouseIsDown = false;
+    this.dragging = false;
     this.lastPos = null;
     requestAnimationFrame(this.draw.bind(this))
   }
-
 
   Grid.prototype.getMousePos = function(evt) {
     var rect = this.canvas.getBoundingClientRect();
-    return {
-      x: (evt.clientX - rect.left),
-      y: (evt.clientY - rect.top)
-    };
+      return {
+        x: (evt.clientX - rect.left),
+        y: (evt.clientY - rect.top)
+      };      
+  }
+
+  Grid.prototype.getTouchPos = function(touch) {
+    var rect = this.canvas.getBoundingClientRect();
+      return {
+        x: (touch.clientX - rect.left),
+        y: (touch.clientY - rect.top)
+      };          
+  }
+
+  Grid.prototype.handleDrag = function(pos) {
+    this.offset.x -= (this.lastPos.x - pos.x)/this.scale;
+    this.offset.y += (this.lastPos.y - pos.y)/this.scale;
   }
 
   Grid.prototype._clear = function() {
@@ -289,15 +394,17 @@ function snap2d(pos, multiple) {
     }
 
     for(var i=0; i<vlines; i++) {
-      var xs = x*this.scale;
+      var xs = Math.round(x*this.scale);
+      xs -= 0.5//(xs%2)/2.0;
       retval.v.push(xs);
       retval.va.push(min_vertical_grid + i*spacing);
       x+=spacing;
     }
 
     for(var i=0; i<hlines; i++) {
-      var ys = y*this.scale;
-      retval.h.push(h-ys);
+      var ys = Math.round(h-y*this.scale);
+      ys -= 0.5//(ys%2)/2.0;
+      retval.h.push(ys);
       retval.ha.push(min_horizontal_grid + i*spacing);
       y+=spacing;
     }
@@ -330,10 +437,10 @@ function snap2d(pos, multiple) {
   }
 
   Grid.prototype._drawSnap = function() {
-    if(!this.lastPos) {
+    if(!this.snapPos) {
       return;
     }
-    var pos = this.mouseToActual(this.lastPos);
+    var pos = this.mouseToActual(this.snapPos);
     var spos = snap2d(pos, this.grid.minor);
     if(spos.x != this.snapPos.x || spos.y != this.snapPos.y) {
       this.emit('snap', spos);
@@ -385,8 +492,11 @@ function snap2d(pos, multiple) {
       m = this.ctx.measureText(txt);
 
       // Clear area underneath text
-      this.ctx.clearRect(0,y-this.scaleTextSize/2.0, m.width, this.scaleTextSize);
-      
+      if(this.clearBehindScaleText) {
+        this.ctx.fillStyle = 'rgba(255,255,255, 0.4)'
+        this.ctx.fillRect(0,y-this.scaleTextSize/2.0, m.width, this.scaleTextSize);
+      }
+
       // Draw
       this.ctx.fillStyle = '#aaaaaa';      
       this.ctx.fillText(txt, 0, y);
@@ -407,8 +517,12 @@ function snap2d(pos, multiple) {
       return
     }
     
-    // Clear out underneath text
-    this.ctx.clearRect(x-m.width/2.0,h-this.scaleTextSize,m.width, this.scaleTextSize);
+    // Clear area underneath text
+    if(this.clearBehindScaleText) {
+      this.ctx.fillStyle = 'rgba(255,255,255, 0.5)'
+      this.ctx.fillRect(x-m.width/2.0,h-this.scaleTextSize,m.width, this.scaleTextSize);
+    }
+
     
     // Draw
     this.ctx.fillStyle = '#aaaaaa';      
@@ -458,6 +572,76 @@ function snap2d(pos, multiple) {
     requestAnimationFrame(animate.bind(this));
   }
 
+  Grid.prototype.gotoArea = function(a, b, duration, easing_function) {
+    //var canvas_w = this.canvas.width/this.scale;
+    //var canvas_h = this.canvas.height/this.scale;
+
+    var xmin = Math.min(a.x, b.x);
+    var ymin = Math.min(a.y, b.y);
+    var xmax = Math.max(a.y, b.y);
+    var ymax = Math.max(a.y, b.y);
+
+    var center = {}
+    center.x = xmin + ((xmax - xmin)/2.0);
+    center.y = ymin + ((ymax - ymin)/2.0);
+
+
+    var scalex = this.canvas.width/(xmax-xmin);
+    var scaley = this.canvas.height/(xmax-xmin);
+
+    var new_scale = Math.min(scalex,scaley);
+
+    if(!duration) {
+      this.offset.x = -center.x+0.5*this.canvas.width/new_scale;
+      this.offset.y = -center.y+0.5*this.canvas.height/new_scale;
+      this.scale = new_scale;
+      requestAnimationFrame(this.draw.bind(this));
+      return;
+    }
+
+    var EasingFunction = easing_function || EasingFunctions.easeInOutCubic;
+    
+    // Time
+    var t0 = new Date().getTime();
+    var tf = t0 + duration;
+
+    // Tweening for scale
+    var s0 = this.scale;
+    var sf = new_scale;
+    var ds = sf - s0;
+
+    // Tweening for position
+    var x0 = this.offset.x;
+    var y0 = this.offset.y;
+    var xf = -center.x+0.5*this.canvas.width/new_scale;
+    var yf = -center.y+0.5*this.canvas.height/new_scale;
+    var dx = xf - x0;
+    var dy = yf - y0;
+
+    function animate() {
+      var t = new Date().getTime();
+      var ts = (t - t0) / duration;
+
+      var x = x0 + dx*EasingFunction(ts);
+      var y = y0 + dy*EasingFunction(ts);
+      var scale = s0 + ds*EasingFunction(ts);
+      
+      if(ts >= 1.0) {
+        this.offset.x = xf;
+        this.offset.y = yf;
+        this.scale = scale;
+      } else {
+        this.offset.x = x;
+        this.offset.y = y;
+        this.scale = scale;
+        this.draw();
+        requestAnimationFrame(animate.bind(this));
+      }
+    }
+    requestAnimationFrame(animate.bind(this));
+    
+  }
+
   Grid.prototype._drawOrigin = function() {
     var w = this.canvas.width;
     var h = this.canvas.height;
@@ -467,12 +651,17 @@ function snap2d(pos, multiple) {
     this.ctx.strokeStyle = this.originColor;
 
     // Vertical
-    this.ctx.moveTo(this.scale*this.offset.x, 0);
-    this.ctx.lineTo(this.scale*this.offset.x, h);
+    x0 = Math.round(this.scale*this.offset.x);
+    x0 -= 0.5//(x0 % 2)/2.0;
+
+    this.ctx.moveTo(x0, 0);
+    this.ctx.lineTo(x0, h);
 
     // Horizontal
-    this.ctx.moveTo(0, h-(this.scale*this.offset.y));
-    this.ctx.lineTo(w, h-(this.scale*this.offset.y));
+    y0 = Math.round(h-(this.scale*this.offset.y));
+    y0 -= 0.5//(y0 % 2)/2.0;
+    this.ctx.moveTo(0, y0);
+    this.ctx.lineTo(w, y0);
 
     // Commit!
     this.ctx.stroke();

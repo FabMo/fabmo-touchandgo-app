@@ -29,6 +29,11 @@
 	background-size: cover;
 }
 
+.center-button {
+	background-image: url("../img/center.png");
+	background-size: cover;
+}
+
 .disabled {
 	opacity: 0.4;
 }
