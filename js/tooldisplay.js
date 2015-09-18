@@ -129,6 +129,7 @@ function midpoint(a,b) {
     this.units = options['units'] || this.options['units'] || 'in';
     this.unitMode = options['unitMode'] || this.options['unitMode'] || 'decimal';
     this.clearBehindScaleText = options['clearBehindScaleText'] || this.options['clearBehindScaleText'] || true;
+    this.toolHeadRadius = options['toolHeadRadius'] || this.options['toolHeadRadius'] || 10;
     this.minScale = 1;
     this.maxScale = 1000;
     this.snap = false;
@@ -556,8 +557,8 @@ function midpoint(a,b) {
     var tf = t0 + duration;
     var x0 = this.offset.x;
     var y0 = this.offset.y;
-    var xf = pos.x+0.5*canvas_w;
-    var yf = pos.y+0.5*canvas_h;
+    var xf = -pos.x+0.5*canvas_w;
+    var yf = -pos.y+0.5*canvas_h;
     var dx = xf - x0;
     var dy = yf - y0;
 
@@ -682,10 +683,28 @@ function midpoint(a,b) {
       center = this.actualToMouse(this.toolPos);
       console.log(center);
       ctx.beginPath();
-      ctx.arc(center.x, center.y, 10, 0, 2*Math.PI, false);
+      
+      // Circle
+      ctx.arc(center.x, center.y, this.toolHeadRadius, 0, 2*Math.PI, false);
+      ctx.fillStyle = 'rgba(0,255,0,0.5)';
+      ctx.fill();
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
       ctx.stroke();
+
+      // Crosshair
+      ctx.moveTo(center.x - this.toolHeadRadius*1.5, center.y);
+      ctx.lineTo(center.x + this.toolHeadRadius*1.5, center.y);
+      ctx.moveTo(center.x , center.y - this.toolHeadRadius*1.5);
+      ctx.lineTo(center.x , center.y + this.toolHeadRadius*1.5);
+      ctx.stroke();
+
+
     }
+  }
+
+  Grid.prototype.getToolPosition = function() {
+    console.log(this.toolPos)
+    return this.toolPos;
   }
 
