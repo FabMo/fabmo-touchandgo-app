@@ -87,6 +87,11 @@ function midpoint(a,b) {
       x : 0,
       y : 0
     }
+
+    this.toolPos = {
+      x : 2,
+      y : 3
+    }
     this.dragging = false;
     this.pinch_dist = null;
 
@@ -353,6 +358,7 @@ function midpoint(a,b) {
     this._drawGrid(this.grid.minor, this.gridMinorColor);
     this._drawGrid(this.grid.major, this.gridMajorColor);
     this._drawOrigin();
+    this._drawToolHead();
     this._drawScale(this.grid.major);
   }
 
@@ -418,6 +424,7 @@ function midpoint(a,b) {
     // Setup style
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;
+    this.ctx.lineWidth = 1;
 
     grid = this._getGridLocations(spacing);
 
@@ -493,7 +500,7 @@ function midpoint(a,b) {
 
       // Clear area underneath text
       if(this.clearBehindScaleText) {
-        this.ctx.fillStyle = 'rgba(255,255,255, 0.4)'
+        this.ctx.fillStyle = 'rgba(255,255,255, 0.5)'
         this.ctx.fillRect(0,y-this.scaleTextSize/2.0, m.width, this.scaleTextSize);
       }
 
@@ -648,6 +655,7 @@ function midpoint(a,b) {
 
     // Setup style
     this.ctx.beginPath();
+    this.ctx.lineWidth = 1;
     this.ctx.strokeStyle = this.originColor;
 
     // Vertical
@@ -666,5 +674,18 @@ function midpoint(a,b) {
     // Commit!
     this.ctx.stroke();
 
+  }
+
+  Grid.prototype._drawToolHead = function() {
+    var ctx = this.ctx;
+    if(this.toolPos != null) {
+      center = this.actualToMouse(this.toolPos);
+      console.log(center);
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, 10, 0, 2*Math.PI, false);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
   }
 
