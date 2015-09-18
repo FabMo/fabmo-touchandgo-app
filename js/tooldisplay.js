@@ -1,4 +1,6 @@
 var CLICK_DETECT_DIST = 5;
+var TAP_DETECT_DIST = 10;
+
 var EasingFunctions = {
   // no easing, no acceleration
   linear: function (t) { return t },
@@ -87,11 +89,8 @@ function midpoint(a,b) {
       x : 0,
       y : 0
     }
-
-    this.toolPos = {
-      x : 2,
-      y : 3
-    }
+    this.extents = null;
+    this.toolPos = null;
     this.dragging = false;
     this.pinch_dist = null;
 
@@ -130,8 +129,8 @@ function midpoint(a,b) {
     this.unitMode = options['unitMode'] || this.options['unitMode'] || 'decimal';
     this.clearBehindScaleText = options['clearBehindScaleText'] || this.options['clearBehindScaleText'] || true;
     this.toolHeadRadius = options['toolHeadRadius'] || this.options['toolHeadRadius'] || 10;
-    this.minScale = 1;
-    this.maxScale = 1000;
+    this.minScale = 10;
+    this.maxScale = 10000;
     this.snap = false;
 
     for(key in options) {
@@ -206,6 +205,7 @@ function midpoint(a,b) {
       touch = evt.touches[0];
       pos = this.getTouchPos(touch);
       this.lastPos = pos;
+      this.touchDownPos = pos;
       this.dragging = true;
     } else if(evt.touches.length == 2) {
       a = this.getTouchPos(evt.touches[0]);
@@ -242,9 +242,21 @@ function midpoint(a,b) {
   Grid.prototype.onTouchEnd = function(evt) {
     this.pinch_dist = null;
     this.pinch_center = null;
-    if(evt.touches.length === 1) {
-    } else if(evt.touches.length === 2) {
+
+    if(evt.changedTouches.length === 1) {
+      var touchPos = this.getTouchPos(evt.changedTouches[0]);
+      if(this.touchDownPos, (dist(touchPos, this.touchDownPos) < TAP_DETECT_DIST)) {
+        event = {}
+        event.pos = this.mouseToActual(touchPos);
+        event.snapPos = snap2d(event.pos, this.grid.minor);
+        this.emit('click', event);      
+      }
+    } else if(evt.changedTouches.length === 2) {
+    
+    } else {
+
     }
+    this.touchDownPos = null;
     this.dragging = false;
     evt.preventDefault();
     requestAnimationFrame(this.draw.bind(this));
@@ -353,6 +365,7 @@ function midpoint(a,b) {
   Grid.prototype.draw = function() {
     this.grid = this.getBestGrid();
     this._clear();
+    this._drawTable();
     if(this.snap) {
       this._drawSnap();      
     }
@@ -455,7 +468,7 @@ function midpoint(a,b) {
     }
     this.snapPos = spos;
     var dpos = this.actualToMouse(spos);
-    var radius = 5;
+    var radius = 3;
     this.ctx.beginPath();
     this.ctx.arc(dpos.x, dpos.y, radius, 0, 2 * Math.PI, false);
     this.ctx.fillStyle = this.gridMinorColor;
@@ -580,22 +593,31 @@ function midpoint(a,b) {
     requestAnimationFrame(animate.bind(this));
   }
 
+  Grid.prototype.gotoExtents = function(duration, easing_function) {
+    if(this.extents) {
+      width = this.extents.xmax - this.extents.xmin;
+      height = this.extents.ymax - this.extents.ymin;
+      pad = 0.1*Math.max(width, height);
+      a = { x : this.extents.xmin - pad, y : this.extents.ymin - pad };
+      b = { x : this.extents.xmax + pad, y : this.extents.ymax + pad };
+      return this.gotoArea(a, b, duration, easing_function);
+    }
+  }
+
   Grid.prototype.gotoArea = function(a, b, duration, easing_function) {
     //var canvas_w = this.canvas.width/this.scale;
     //var canvas_h = this.canvas.height/this.scale;
 
     var xmin = Math.min(a.x, b.x);
     var ymin = Math.min(a.y, b.y);
-    var xmax = Math.max(a.y, b.y);
+    var xmax = Math.max(a.x, b.x);
     var ymax = Math.max(a.y, b.y);
 
     var center = {}
     center.x = xmin + ((xmax - xmin)/2.0);
     center.y = ymin + ((ymax - ymin)/2.0);
-
-
     var scalex = this.canvas.width/(xmax-xmin);
-    var scaley = this.canvas.height/(xmax-xmin);
+    var scaley = this.canvas.height/(ymax-ymin);
 
     var new_scale = Math.min(scalex,scaley);
 
@@ -681,7 +703,6 @@ function midpoint(a,b) {
     var ctx = this.ctx;
     if(this.toolPos != null) {
       center = this.actualToMouse(this.toolPos);
-      console.log(center);
       ctx.beginPath();
       
       // Circle
@@ -698,13 +719,40 @@ function midpoint(a,b) {
       ctx.moveTo(center.x , center.y - this.toolHeadRadius*1.5);
       ctx.lineTo(center.x , center.y + this.toolHeadRadius*1.5);
       ctx.stroke();
-
-
     }
   }
 
+  Grid.prototype._drawTable = function() {
+    var ctx = this.ctx;
+
+    if(this.extents == null) { return; }
+
+    a = this.actualToMouse(snap2d({x : this.extents.xmin, y : this.extents.ymin},this.grid.minor));
+    b = this.actualToMouse(snap2d({x : this.extents.xmax, y : this.extents.ymax},this.grid.minor));
+
+    width = b.x-a.x;
+    height = b.y-a.y;
+    ctx.fillStyle = 'rgba(245,245,245,1.0)';
+    ctx.fillRect(a.x, a.y, width, height);
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = this.gridMinorColor;
+    ctx.strokeRect(a.x, a.y, width, height);
+  }
+
   Grid.prototype.getToolPosition = function() {
-    console.log(this.toolPos)
     return this.toolPos;
   }
 
+  Grid.prototype.setToolPosition = function(x,y) {
+    this.toolPos = {'x' : x, 'y' : y};
+    requestAnimationFrame(this.draw.bind(this));
+  }
+
+  Grid.prototype.setExtents = function(extents) {
+    this.extents = extents || null;
+  }
+
+  Grid.prototype.clearExtents = function() {
+    this.extents = null;
+  }

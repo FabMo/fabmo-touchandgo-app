@@ -49,11 +49,11 @@
           });
 
           $('.home-button').click(function(evt) {
-            display.goto({x:0,y:0}, 1000);
+            display.gotoExtents(1000);
           });
 
           $('.center-button').click(function(evt) {
-            display.goto(display.getToolPosition(), 1000);
+            display.goto(display.getToolPosition() || {x:0,y:0}, 1000);
           });
         }
 
@@ -61,8 +61,33 @@
         $(document).ready(function() {
           canvas = document.getElementById('toolcanvas');
           display = new Grid(canvas, {});
-          display.on('snap', function(evt) {
-            //$('#position').text(evt.x.toFixed(2) + "," + evt.y.toFixed(2));
+
+          fabmoDashboard.on('status', function(status) {
+            x = status.posx;
+            y = status.posy;
+            if(x != undefined && y != undefined) {
+              display.setToolPosition(x,y);
+            }
+          });
+
+          fabmoDashboard.requestStatus();
+
+          fabmoDashboard.getConfig(function(err, cfg) {
+            try {
+              if(cfg.machine.envelope) {
+                display.setExtents(cfg.machine.envelope);
+                display.gotoExtents(1000);
+              }              
+            } catch(e) {
+              console.error(e);
+            }
+          });
+
+          display.setExtents({
+            xmin : 0,
+            xmax : 6,
+            ymin : 0,
+            ymax : 8
           });
 
           display.on('click', function(evt) {
@@ -71,14 +96,12 @@
             fabmoDashboard.runGCode(gcode);
           });
 
-          fabmoDashboard.on('status', function(stat) {
-            console.log(stat);
-          });
           window.addEventListener('resize', resizeCanvas);
           resizeCanvas();
           display.scale = Math.max(display.canvas.width, display.canvas.height)/8.0;
           setupControls();
           display.draw();
+
         });
 
 
