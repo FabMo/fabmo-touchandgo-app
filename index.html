@@ -26,7 +26,9 @@
 
     <script type="text/javascript">
         var display;
-        var snapEnabled = false;
+        var state = {
+          snap : 'false'
+        };
 
         function resizeCanvas() {
           var container= document.getElementById("container");
@@ -37,15 +39,39 @@
           display.draw();
         }
 
+        function saveState() {
+          if(typeof(Storage) !== "undefined") {
+            localStorage.state = JSON.stringify(state);
+          } else {
+            console.warn("No HTML5 storage support?");
+          }
+        }
+
+        function loadState() {
+          if(typeof(Storage) !== "undefined") {
+            var obj = JSON.parse(localStorage.state);
+            state.snap = obj.snap || false;
+          } else {
+            console.warn("No HTML5 storage support?");
+          }
+        }
+
         function setupControls() {
+          if(state.snap) {
+            $('#snap-button').removeClass('disabled');
+          } else {
+            $('#snap-button').addClass('disabled');
+          }            
+
           $('.snap-button').click(function(evt) {
-            if(snapEnabled) {
+            if(state.snap) {
               $('#snap-button').addClass('disabled');
             } else {
               $('#snap-button').removeClass('disabled');
             }
-            snapEnabled = !snapEnabled;
-            display.setSnap(snapEnabled);
+            state.snap = !state.snap;
+            display.setSnap(state.snap);
+            saveState();
           });
 
           $('.home-button').click(function(evt) {
@@ -83,9 +109,8 @@
             }
           });
 
-
           display.on('click', function(evt) {
-            pos = snapEnabled ? evt.snapPos : evt.pos;
+            pos = state.snap ? evt.snapPos : evt.pos;
             gcode = 'G0 X' + pos.x.toFixed(5) + ' Y' + pos.y.toFixed(5);
             fabmoDashboard.runGCode(gcode);
           });
@@ -93,6 +118,7 @@
           window.addEventListener('resize', resizeCanvas);
           resizeCanvas();
           display.scale = Math.max(display.canvas.width, display.canvas.height)/8.0;
+          loadState();
           setupControls();
           display.draw();
 

@@ -1,3 +1,7 @@
+body {
+	overflow : hidden;
+}
+
 .left-toolbox {
 	top: 10px;
 	left: 10px;
