@@ -146,6 +146,19 @@ FabMoDashboard.prototype._simulateCall = function(name, data, callback) {
 			alert("DRO Hidden.");
 		break;
 		
+		case "getConfig":
+			callback(null,
+			{
+				machine : {
+					envelope : {
+						xmin : 0,
+						ymin : 0, 
+						xmax : 10,
+						ymax : 10
+					}
+				}
+			});
+			break;
 		default:
 			alert(name + " called.");
 		break;

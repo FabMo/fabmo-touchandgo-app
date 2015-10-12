@@ -49,7 +49,11 @@
 
         function loadState() {
           if(typeof(Storage) !== "undefined") {
-            var obj = JSON.parse(localStorage.state);
+            try {
+              var obj = JSON.parse(localStorage.state);
+            } catch(e) {
+              var obj = {snap : false};
+            }
             state.snap = obj.snap || false;
           } else {
             console.warn("No HTML5 storage support?");
@@ -86,7 +90,9 @@
 
         $(document).ready(function() {
           canvas = document.getElementById('toolcanvas');
-          display = new Grid(canvas, {});
+          display = new Grid(canvas, {
+            tableColor : '#FFFF99'
+          });
 
           fabmoDashboard.on('status', function(status) {
             x = status.posx;

@@ -118,6 +118,7 @@ function midpoint(a,b) {
     this.gridMajorColor = options['gridMajorColor'] || this.options['gridMajorColor'] || '#3399ff';
     this.gridMinorColor = options['gridMinorColor'] || this.options['gridMinorColor'] || '#ccccff';
     this.originColor = options['originColor'] || this.options['originColor'] || 'red';
+    this.tableColor = options['tableColor'] || this.options['tableColor'] || 'white';
     this.currentLocationColor = options['currentLocationColor'] || this.options['currentLocationColor'] || 'green';
     this.targetLocationColor = options['targetLocationColor'] || this.options['targetLocationColor'] || 'red';
     this.actualWidth = options['width'] || this.options['width'] || 6.0;
@@ -732,7 +733,7 @@ function midpoint(a,b) {
 
     width = b.x-a.x;
     height = b.y-a.y;
-    ctx.fillStyle = 'rgba(245,245,245,1.0)';
+    ctx.fillStyle = this.tableColor;
     ctx.fillRect(a.x, a.y, width, height);
 
     ctx.lineWidth = 3;
