@@ -286,15 +286,23 @@ function midpoint(a,b) {
   Grid.prototype.onMouseUp = function(evt) {
     var mousePos = this.getMousePos(evt);
     if(dist(mousePos, this.mouseDownPos) < CLICK_DETECT_DIST) {
-      event = {}
-      event.pos = this.mouseToActual(mousePos);
-      event.snapPos = snap2d(event.pos, this.grid.minor);
-      this.emit('click', event);      
+      $.confirm({
+        text: "Are you sure you want to move the reticule?",
+        confirm: function() {
+            event = {}
+            event.pos = this.mouseToActual(mousePos);
+            event.snapPos = snap2d(event.pos, this.grid.minor);
+            this.emit('click', event);
+      }.bind(this),
+        cancel: function() {
+            // nothing to do
+        }
+      });
     }
-    this.dragging = false;
-    this.snapPos = null;
-    evt.preventDefault();
-    requestAnimationFrame(this.draw.bind(this));
+      this.dragging = false;
+      this.snapPos = null;
+      evt.preventDefault();
+      requestAnimationFrame(this.draw.bind(this));
   }
 
   Grid.prototype.onMouseWheel = function(evt) {
