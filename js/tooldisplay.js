@@ -247,18 +247,24 @@ function midpoint(a,b) {
     if(evt.changedTouches.length === 1) {
       var touchPos = this.getTouchPos(evt.changedTouches[0]);
       if(this.touchDownPos, (dist(touchPos, this.touchDownPos) < TAP_DETECT_DIST)) {
-      $.confirm({
-        text: "Are you sure you want to move the reticule?",
-        confirm: function() {
-            event = {}
-            event.pos = this.mouseToActual(touchPos);
-            event.snapPos = snap2d(event.pos, this.grid.minor);
-            this.emit('click', event);
-      }.bind(this),
-        cancel: function() {
-            // nothing to do
+          // may need to change the constant for touch operations
+        if(dist(this.getToolPosition(), this.mouseToActual(touchPos)) < 0.3) {
+          this.goto(this.getToolPosition(), 1000);
         }
-      });
+        else {
+        $.confirm({
+            text: "Are you sure you want to move the reticule?",
+            confirm: function() {
+                event = {}
+                event.pos = this.mouseToActual(touchPos);
+                event.snapPos = snap2d(event.pos, this.grid.minor);
+                this.emit('click', event);
+        }.bind(this),
+            cancel: function() {
+                // nothing to do
+            }
+        });
+        }
      }    
     } else if(evt.changedTouches.length === 2) {
     
@@ -295,7 +301,7 @@ function midpoint(a,b) {
     var mousePos = this.getMousePos(evt);
     if(dist(mousePos, this.mouseDownPos) < CLICK_DETECT_DIST) {
       if(dist(this.getToolPosition(), this.mouseToActual(mousePos)) < 0.2) {
-          console.log("clicked reticule");
+          this.goto(this.getToolPosition(), 1000);
       }
       else {
       $.confirm({
