@@ -390,7 +390,13 @@ function midpoint(a,b) {
     this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
   }
 
+  Grid.prototype._okToDraw = function() {
+    return !(this.canvas.width === 0 || this.canvas.height === 0);
+  }
+
   Grid.prototype.draw = function() {
+    if(!this._okToDraw()) { return; }
+    if(this.scale === 0) { this.scale = 100; }
     this.grid = this.getBestGrid();
     this._clear();
     this._drawTable();
