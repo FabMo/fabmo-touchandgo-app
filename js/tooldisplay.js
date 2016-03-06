@@ -253,7 +253,7 @@ function midpoint(a,b) {
         }
         else {
         $.confirm({
-            text: "Are you sure you want to move the reticule?",
+            text: "Move the tool?",
             confirm: function() {
                 event = {}
                 event.pos = this.mouseToActual(touchPos);
@@ -305,7 +305,7 @@ function midpoint(a,b) {
       }
       else {
       $.confirm({
-        text: "Are you sure you want to move the reticule?",
+        text: "Move the tool?",
         confirm: function() {
             event = {}
             event.pos = this.mouseToActual(mousePos);
