@@ -58,6 +58,20 @@ rangeSlider.prototype = {
     }, false);
     rs.canvas.addEventListener(endEvent, function mouseup(e) {
       rs.draggable = false;
+      var c = rs.canvas;
+      rs.mouseY = e.layerY;
+      rs.mouseY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
+      if(Math.abs(rs.mouseY - rs.lastClickY) < 0.1) {
+          $.confirm({
+            text: "Are you sure you want to move the reticule?",
+            confirm: function() {
+                rs.update(rs.mouseY);
+        }.bind(rs),
+            cancel: function() {
+                // nothing to do
+            }
+        });
+      }
       rs.updatePosition();
     }, false);
     rs.canvas.addEventListener(moveEvent, rs.mousemove.bind(this), false);
