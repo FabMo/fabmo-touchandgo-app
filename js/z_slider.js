@@ -62,15 +62,21 @@ rangeSlider.prototype = {
       rs.mouseY = e.layerY;
       rs.mouseY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
       if(Math.abs(rs.mouseY - rs.lastClickY) < 0.1) {
-          $.confirm({
-            text: "Are you sure you want to move the reticule?",
-            confirm: function() {
-                rs.update(rs.mouseY);
-        }.bind(rs),
-            cancel: function() {
-                // nothing to do
-            }
-        });
+          var cursorDistance = rs.getDistance(rs.padding, rs.currentPosition);
+          if(cursorDistance <= 20) {
+              rs.centerCursor();
+          }
+          else {
+            $.confirm({
+                text: "Are you sure you want to move the reticule?",
+                confirm: function() {
+                    rs.update(rs.mouseY);
+                }.bind(rs),
+                cancel: function() {
+                    // nothing to do
+                }
+            });
+        }
       }
       rs.updatePosition();
     }, false);
@@ -108,6 +114,12 @@ rangeSlider.prototype = {
       rs.percent = (rs.actual - rs.minZ) / (rs.maxZ - rs.minZ);
       rs.currentPosition = rs.height - (rs.percent * (rs.height - rs.padding));
       requestAnimationFrame(rs.draw.bind(rs));
+  },
+  
+  centerCursor: function() {
+      var rs = this;
+      // todo: add centering logic
+      rs.updatePosition();
   },
   
   draw: function() {
@@ -341,4 +353,4 @@ rangeSlider.prototype = {
   }
 }
 
-var rs = new rangeSlider(250, 900);
+var rs = new rangeSlider(250, 100);
