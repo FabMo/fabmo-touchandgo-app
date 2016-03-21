@@ -1,4 +1,4 @@
-rangeSlider = function() {
+rangeSlider = function(height, width) {
   this.scalar = 1;
   this.minTicks = 1;
   this.maxTicks = 9;
@@ -18,17 +18,17 @@ rangeSlider = function() {
   this.actual = 0;
   this.snap = true;
   this.draggable = false;
-  this.init();
+  this.init(height, width);
 }
 
 rangeSlider.prototype = {
   constructor: rangeSlider,
   
-  init: function() {
+  init: function(height, width) {
     var rs = this;
     rs.canvas = document.createElement("canvas");
-    rs.canvas.width = 900;
-    rs.canvas.height = 250;
+    rs.canvas.width = width;
+    rs.canvas.height = height;
     document.body.appendChild(rs.canvas);
     rs.ctx = rs.canvas.getContext('2d');
     rs.mouseX = 0;
@@ -140,10 +140,8 @@ rangeSlider.prototype = {
     }
     
     rs.ctx.fillStyle = "black";
-    var diffTop = Math.abs(rs.actual - rs.maxZ);
-    var diffBottom = Math.abs(rs.actual - rs.minZ);
     
-    if((difference != 0) && (diffTop > 0.1) && (diffBottom > 0.1)) {
+    if((difference != 0) && (rs.percent > 0.1 && rs.percent < 0.99)) {
         if(difference > 0) {
             var sign = "+";
         }
@@ -152,7 +150,7 @@ rangeSlider.prototype = {
         }
         rs.ctx.fillText(rs.actual.toFixed(3) + " (" + sign + difference.toFixed(3) + ")", rs.padding + 11, rs.currentPosition + 3);
     }
-    else if(diffTop > 0.1 && diffBottom > 0.1) {
+    else if(rs.percent > 0.01 && rs.percent < 0.99) {
         rs.ctx.fillText(rs.actual.toFixed(3), rs.padding + 11, rs.currentPosition + 3);
     }
   },
@@ -303,16 +301,12 @@ rangeSlider.prototype = {
   
   getDistance: function(px, py) {
     var rs = this;
-    
     var xs = 0;
     var ys = 0;
-
     xs = px - rs.mouseX;
     xs = xs * xs;
-
     ys = py - rs.mouseY;
     ys = ys * ys;
-
     return Math.sqrt(xs + ys);
   },
   
@@ -333,4 +327,4 @@ rangeSlider.prototype = {
   }
 }
 
-var rs = new rangeSlider();
+var rs = new rangeSlider(250, 900);
