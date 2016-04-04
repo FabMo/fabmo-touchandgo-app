@@ -118,7 +118,10 @@ rangeSlider.prototype = {
   
   centerCursor: function() {
       var rs = this;
-      // todo: add centering logic
+      var center = rs.minZ + (rs.maxZ - rs.minZ) / 2;
+      var difference = rs.actual - center;
+      rs.minZ += difference;
+      rs.maxZ += difference;
       rs.updatePosition();
   },
   
