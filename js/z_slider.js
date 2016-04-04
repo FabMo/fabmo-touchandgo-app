@@ -25,8 +25,8 @@ rangeSlider.prototype = {
     rs.percent = ((rs.height - rs.padding) - (rs.currentPosition - rs.padding)) / (rs.height - rs.padding);
     rs.actual = rs.minZ + ((rs.maxZ - rs.minZ) * rs.percent);
 
-    // Ripped this touch support code from a random JSFiddle, so it may not work with FabMo.
-    // -Eli
+    // Ripped this touch support code from a random JSFiddle, so it may not work with FabMo.  -Eli
+    
     var isTouchSupported = 'ontouchstart' in window;
     var startEvent = isTouchSupported ? 'touchstart' : 'mousedown';
     var moveEvent = isTouchSupported ? 'touchmove' : 'mousemove';
@@ -58,7 +58,7 @@ rangeSlider.prototype = {
             $.confirm({
                 text: dialog,
                 confirm: function() {
-                    rs.update(rs.mouseY);
+                    rs.updateFromPosition(location);
                 }.bind(rs),
                 cancel: function() {
                     // nothing to do
@@ -98,7 +98,7 @@ rangeSlider.prototype = {
       rs.maxZ = 1;
       rs.percent = 0;
       rs.actual = 0;
-      rs.snap = false;
+      rs.snap = true;
       rs.draggable = false;
   },
   
@@ -123,12 +123,6 @@ rangeSlider.prototype = {
       rs.currentPosition = Math.min(rs.currentPosition, rs.height);
       rs.percent = (rs.height - rs.currentPosition) / (rs.height - rs.padding);
       rs.actual = rs.minZ + ((rs.maxZ - rs.minZ) * rs.percent);
-      if(rs.snap) {
-          var check = Math.round(rs.actual / rs.scalar) * rs.scalar;
-          if(check <= rs.maxZ && check >= rs.minZ) {
-              rs.updateFromPosition(check);
-          }
-      }
   },
   
   updatePosition: function() {
@@ -306,9 +300,7 @@ rangeSlider.prototype = {
       var cursorDistance = rs.getDistance(rs.padding, rs.currentPosition);
       var moveDistance = Math.abs(rs.mouseY - rs.lastClickY);
       var moveDiff = moveDistance - rs.lastMove;
-    //   console.log("Mouse move: " + moveDiff);
       var pixelCompensation = (rs.maxZ - rs.minZ) / (rs.height - rs.padding);
-    //   console.log("Pixels per inch: " + pixelCompensation);
       
       if (cursorDistance <= 20) {
         rs.update(rs.mouseY);
