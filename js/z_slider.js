@@ -1,3 +1,5 @@
+// todo: fix dragging via pixel scaling, implement visual tweening for centering movement
+
 rangeSlider = function(height, width) {
   this.setOptions();
   this.init(height, width);
@@ -94,7 +96,7 @@ rangeSlider.prototype = {
       rs.maxZ = 1;
       rs.percent = 0;
       rs.actual = 0;
-      rs.snap = true;
+      rs.snap = false;
       rs.draggable = false;
   },
   
@@ -162,6 +164,7 @@ rangeSlider.prototype = {
   
   drawTrack: function() {
     var rs = this;
+    var difference = rs.actual - rs.lastActual;
     rs.ctx.beginPath();
     rs.ctx.moveTo(rs.padding, rs.padding);
     rs.ctx.lineTo(rs.padding, rs.height);
@@ -169,6 +172,16 @@ rangeSlider.prototype = {
     rs.ctx.lineWidth = 3;
     rs.ctx.stroke();
     rs.ctx.closePath();
+    
+    if(difference != 0) {
+        rs.ctx.beginPath();
+        rs.ctx.strokeStyle = rs.ghostColor;
+        rs.ctx.moveTo(rs.padding, rs.lastCurrent);
+        rs.ctx.lineTo(rs.padding, rs.currentPosition);
+        rs.ctx.lineWidth = 4;
+        rs.ctx.stroke();
+        rs.ctx.closePath();
+    }
   },
   
   drawCursor: function() {
