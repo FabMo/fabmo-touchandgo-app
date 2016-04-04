@@ -46,12 +46,14 @@ rangeSlider.prototype = {
       rs.mouseY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
       if(Math.abs(rs.mouseY - rs.lastClickY) < 0.1) {
           var cursorDistance = rs.getDistance(rs.padding, rs.currentPosition);
+          var location = rs.calculateUpdate(rs.mouseY);
+          var dialog = "Are you sure you want to move the reticule to (" + location.toFixed(3) + ")?";
           if(cursorDistance <= 20) {
               rs.centerCursor();
           }
           else {
             $.confirm({
-                text: "Are you sure you want to move the reticule?",
+                text: dialog,
                 confirm: function() {
                     rs.update(rs.mouseY);
                 }.bind(rs),
@@ -94,6 +96,21 @@ rangeSlider.prototype = {
       rs.actual = 0;
       rs.snap = true;
       rs.draggable = false;
+  },
+  
+  calculateUpdate: function(mouseY) {
+      var rs = this;
+      var currentPosition = Math.max(mouseY, rs.padding);
+      currentPosition = Math.min(currentPosition, rs.height);
+      var percent = (rs.height - currentPosition) / (rs.height - rs.padding);
+      var actual = rs.minZ + ((rs.maxZ - rs.minZ) * percent);
+      if(rs.snap) {
+          var check = Math.round(actual / rs.scalar) * rs.scalar;
+          if(check <= rs.maxZ && check >= rs.minZ) {
+              return check;
+          }
+      }
+      return actual;
   },
   
   update: function(mouseY) {
