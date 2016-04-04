@@ -1,23 +1,5 @@
 rangeSlider = function(height, width) {
-  this.scalar = 1;
-  this.minTicks = 1;
-  this.maxTicks = 9;
-  this.currentPosition = 0;
-  this.width = 0;
-  this.height = 0;
-  this.padding = 15;
-  this.trackHeight = (this.height - (2 * this.padding));
-  this.cw = 0;
-  this.ch = 0;
-  this.lastActual = 0;
-  this.lastCurrent = 0;
-  this.lastClickY = 0;
-  this.minZ = -1;
-  this.maxZ = 1;
-  this.percent = 0;
-  this.actual = 0;
-  this.snap = true;
-  this.draggable = false;
+  this.setOptions();
   this.init(height, width);
 }
 
@@ -56,6 +38,7 @@ rangeSlider.prototype = {
       rs.lastClickY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
       rs.updatePosition();
     }, false);
+    
     rs.canvas.addEventListener(endEvent, function mouseup(e) {
       rs.draggable = false;
       var c = rs.canvas;
@@ -85,6 +68,32 @@ rangeSlider.prototype = {
     rs.canvas.addEventListener('onblur', rs.onblur.bind(this), false);
     rs.canvas.addEventListener('onmouseout', rs.onmouseout.bind(this), false);
     rs.draw();
+  },
+  
+  setOptions: function() {
+      var rs = this;
+      rs.cursorColor = 'rgba(0, 255, 0, 0.85)';
+      rs.ghostColor = 'rgba(0, 255, 0, 0.35)'
+      rs.trackColor = 'black';
+      rs.scalar = 1;
+      rs.minTicks = 1;
+      rs.maxTicks = 9;
+      rs.currentPosition = 0;
+      rs.width = 0;
+      rs.height = 0;
+      rs.padding = 15;
+      rs.trackHeight = (this.height - (2 * this.padding));
+      rs.cw = 0;
+      rs.ch = 0;
+      rs.lastActual = 0;
+      rs.lastCurrent = 0;
+      rs.lastClickY = 0;
+      rs.minZ = -1;
+      rs.maxZ = 1;
+      rs.percent = 0;
+      rs.actual = 0;
+      rs.snap = true;
+      rs.draggable = false;
   },
   
   update: function(mouseY) {
@@ -139,7 +148,7 @@ rangeSlider.prototype = {
     rs.ctx.beginPath();
     rs.ctx.moveTo(rs.padding, rs.padding);
     rs.ctx.lineTo(rs.padding, rs.height);
-    rs.ctx.strokeStyle = "black";
+    rs.ctx.strokeStyle = rs.trackColor;
     rs.ctx.lineWidth = 3;
     rs.ctx.stroke();
     rs.ctx.closePath();
@@ -150,17 +159,25 @@ rangeSlider.prototype = {
     var difference = rs.actual - rs.lastActual;
     
     rs.ctx.beginPath();
-    rs.ctx.strokeStyle = "rgb(255,200,0)";
-    rs.ctx.fillStyle = "rgb(255,200,0)";
+    rs.ctx.strokeStyle = rs.cursorColor;
+    rs.ctx.fillStyle = rs.cursorColor;
     rs.ctx.arc(rs.padding, rs.currentPosition, 5, 0, 2 * Math.PI, true);
     rs.ctx.fill();
     rs.ctx.stroke();
     
+    rs.ctx.closePath();
+    rs.ctx.beginPath();
+    rs.ctx.strokeStyle = rs.trackColor;
+    rs.ctx.lineWidth = 1;
+    rs.ctx.arc(rs.padding, rs.currentPosition, 5, 0, 2 * Math.PI, true);
+    rs.ctx.stroke();
+    
+    
      if(difference != 0) {
         rs.ctx.closePath();
         rs.ctx.beginPath();
-        rs.ctx.strokeStyle = "rgba(255,200,0,0.35)";
-        rs.ctx.fillStyle = "rgba(255,200,0,0.35)";
+        rs.ctx.strokeStyle = rs.ghostColor;
+        rs.ctx.fillStyle = rs.ghostColor;
         rs.ctx.arc(rs.padding, rs.lastCurrent, 5, 0, 2 * Math.PI, true);
         rs.ctx.fill();
         rs.ctx.stroke();
@@ -168,7 +185,7 @@ rangeSlider.prototype = {
         rs.ctx.beginPath();
     }
     
-    rs.ctx.fillStyle = "black";
+    rs.ctx.fillStyle = rs.trackColor;
     
     if((difference != 0) && (rs.percent > 0.1 && rs.percent < 0.99)) {
         if(difference > 0) {
@@ -190,22 +207,22 @@ rangeSlider.prototype = {
     rs.ctx.moveTo(rs.padding - 7, rs.padding);
     rs.ctx.lineTo(rs.padding + 7, rs.padding);
     rs.ctx.closePath();
-    rs.ctx.strokeStyle = "black";
+    rs.ctx.strokeStyle = rs.trackColor;
     rs.ctx.lineWidth = 2;
     rs.ctx.stroke();
     rs.ctx.closePath();
-    rs.ctx.fillStyle = "black";
+    rs.ctx.fillStyle = rs.trackColor;
     rs.ctx.fillText(rs.maxZ.toFixed(3), rs.padding + 11, rs.padding + 3);
     
     rs.ctx.beginPath();
     rs.ctx.moveTo(rs.padding - 7, rs.height);
     rs.ctx.lineTo(rs.padding + 7, rs.height);
     rs.ctx.closePath();
-    rs.ctx.strokeStyle = "black";
+    rs.ctx.strokeStyle = rs.trackColor;
     rs.ctx.lineWidth = 2;
     rs.ctx.stroke();
     rs.ctx.closePath();
-    rs.ctx.fillStyle = "black";
+    rs.ctx.fillStyle = rs.trackColor;
     rs.ctx.fillText(rs.minZ.toFixed(3), rs.padding + 11, rs.height + 3);
   },
   
@@ -226,7 +243,7 @@ rangeSlider.prototype = {
           rs.ctx.moveTo(rs.padding - 5, tick);
           rs.ctx.lineTo(rs.padding + 5, tick);
           rs.ctx.closePath();
-          rs.ctx.strokeStyle = "black";
+          rs.ctx.strokeStyle = rs.trackColor;
           rs.ctx.lineWidth = 1;
           rs.ctx.stroke();
           rs.ctx.closePath();
