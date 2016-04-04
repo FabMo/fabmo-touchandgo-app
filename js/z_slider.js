@@ -1,4 +1,4 @@
-// todo: fix dragging via pixel scaling, implement visual tweening for centering movement
+// todo: implement visual tweening for centering movement
 
 rangeSlider = function(height, width) {
   this.setOptions();
@@ -43,6 +43,7 @@ rangeSlider.prototype = {
     
     rs.canvas.addEventListener(endEvent, function mouseup(e) {
       rs.draggable = false;
+      rs.lastMove = 0;
       var c = rs.canvas;
       rs.mouseY = e.layerY;
       rs.mouseY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
@@ -92,6 +93,7 @@ rangeSlider.prototype = {
       rs.lastActual = 0;
       rs.lastCurrent = 0;
       rs.lastClickY = 0;
+      rs.lastMove = 0;
       rs.minZ = -1;
       rs.maxZ = 1;
       rs.percent = 0;
@@ -302,26 +304,31 @@ rangeSlider.prototype = {
     }
     else {
       var cursorDistance = rs.getDistance(rs.padding, rs.currentPosition);
-      var moveDistance = 0.04;
+      var moveDistance = Math.abs(rs.mouseY - rs.lastClickY);
+      var moveDiff = moveDistance - rs.lastMove;
+    //   console.log("Mouse move: " + moveDiff);
+      var pixelCompensation = (rs.maxZ - rs.minZ) / (rs.height - rs.padding);
+    //   console.log("Pixels per inch: " + pixelCompensation);
       
-      if (cursorDistance <= 30) {
+      if (cursorDistance <= 20) {
         rs.update(rs.mouseY);
         return;
       }
       else {
-            if(rs.mouseY < rs.lastClickY && rs.checkSlideBoundaries(moveDistance, true)) {
-                rs.maxZ -= moveDistance;
-                rs.minZ -= moveDistance;
+            if(rs.mouseY < rs.lastClickY && rs.checkSlideBoundaries(moveDiff * pixelCompensation, true)) {
+                rs.maxZ -= moveDiff * pixelCompensation;
+                rs.minZ -= moveDiff * pixelCompensation;
                 rs.updatePosition();
             }
          else {
-            if(rs.checkSlideBoundaries(moveDistance, false)) {
-                rs.minZ += moveDistance;
-                rs.maxZ += moveDistance;
+            if(rs.checkSlideBoundaries(moveDiff * pixelCompensation, false)) {
+                rs.minZ += moveDiff * pixelCompensation;
+                rs.maxZ += moveDiff * pixelCompensation;
                 rs.updatePosition();
             }
          }
       }
+      rs.lastMove = moveDistance;
      }
   },
   
@@ -336,6 +343,7 @@ rangeSlider.prototype = {
   onmouseout: function(e) {
       var rs = this;
       rs.draggable = false;
+      rs.lastMove = 0;
       requestAnimationFrame(rs.draw.bind(rs));
   },
   
