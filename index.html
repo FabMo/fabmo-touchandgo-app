@@ -4,134 +4,26 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Touch and Go</title>
+    <title>Z Slider</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
   </head>
   <body>
-      <div id="container">
-        <canvas width="100" height="100" id="toolcanvas"></canvas>
-        <div class="right-toolbox">
-          <div id="snap-button" class="button snap-button disabled"></div>
-          <div id="snap-button" class="button home-button"></div>
-          <div id="snap-button" class="button center-button"></div>
-          <div id="position"></div>
-        </div>        
-      </div>
+      
+    <canvas id="slidercanvas" width="100" height="250"></canvas>
     
-    <script src="js/jquery.js"></script>    
+    <script src="js/jquery.js"></script>
     <script src="js/bootstrap.min.js"></script>
-    <script src="js/dashboard.js"></script>
-    <script src="js/tooldisplay.js"></script>
+    <script src="js/z_slider.js"></script>
     <script src="js/jquery.confirm.min.js"></script>
-
+    
     <script type="text/javascript">
-        var display;
-        var state = {
-          snap : 'false'
-        };
-
-        function resizeCanvas() {
-          var container= document.getElementById("container");
-          container.style.height=window.innerHeight;
-          container.style.width=window.innerWidth;
-          display.canvas.width = window.innerWidth;
-          display.canvas.height = window.innerHeight;
-          display.draw();
-        }
-
-        function saveState() {
-          if(typeof(Storage) !== "undefined") {
-            localStorage.state = JSON.stringify(state);
-          } else {
-            console.warn("No HTML5 storage support?");
-          }
-        }
-
-        function loadState() {
-          if(typeof(Storage) !== "undefined") {
-            try {
-              var obj = JSON.parse(localStorage.state);
-            } catch(e) {
-              var obj = {snap : false};
-            }
-            state.snap = obj.snap || false;
-          } else {
-            console.warn("No HTML5 storage support?");
-          }
-        }
-
-        function setupControls() {
-          if(state.snap) {
-            $('#snap-button').removeClass('disabled');
-          } else {
-            $('#snap-button').addClass('disabled');
-          }            
-
-          $('.snap-button').click(function(evt) {
-            if(state.snap) {
-              $('#snap-button').addClass('disabled');
-            } else {
-              $('#snap-button').removeClass('disabled');
-            }
-            state.snap = !state.snap;
-            display.setSnap(state.snap);
-            saveState();
-          });
-
-          $('.home-button').click(function(evt) {
-            display.gotoExtents(1000);
-          });
-
-          $('.center-button').click(function(evt) {
-            display.goto(display.getToolPosition() || {x:0,y:0}, 1000);
-          });
-        }
-
-
-        $(document).ready(function() {
-          canvas = document.getElementById('toolcanvas');
-          display = new Grid(canvas, {
-            tableColor : '#FFFF99'
-          });
-
-          fabmoDashboard.on('status', function(status) {
-            x = status.posx;
-            y = status.posy;
-            if(x != undefined && y != undefined) {
-              display.setToolPosition(x,y);
-            }
-          });
-
-          fabmoDashboard.requestStatus();
-
-          fabmoDashboard.getConfig(function(err, cfg) {
-            try {
-              if(cfg.machine.envelope) {
-                display.setExtents(cfg.machine.envelope);
-                display.gotoExtents(1000);
-              }              
-            } catch(e) {
-              console.error(e);
-            }
-          });
-
-          display.on('click', function(evt) {
-            pos = state.snap ? evt.snapPos : evt.pos;
-            gcode = 'G0 X' + pos.x.toFixed(5) + ' Y' + pos.y.toFixed(5);
-            fabmoDashboard.runGCode(gcode);
-          });
-
-          window.addEventListener('resize', resizeCanvas);
-          resizeCanvas();
-          display.scale = Math.max(display.canvas.width, display.canvas.height)/8.0;
-          loadState();
-          setupControls();
-          display.draw();
-
-        });
-
-
+    var slider;
+    $(document).ready(function() {
+          canvas = document.getElementById('slidercanvas');
+          slider = new rangeSlider(canvas);
+     });
     </script>
+    
   </body>
 </html>
