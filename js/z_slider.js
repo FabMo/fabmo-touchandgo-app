@@ -1,4 +1,4 @@
-// todo: implement visual tweening for movement; finish functions for touch events
+// todo: implement visual tweening for smooth movement via easing functions
 
 rangeSlider = function(canvas) {
     this.setOptions();
@@ -24,6 +24,7 @@ rangeSlider.prototype = {
         this.lastMove = 0;
         this.mouseX = 0;
         this.mouseY = 0;
+        this.pinch_dist = null;
         this.snap = true;
         this.draggable = false;
 
@@ -226,7 +227,7 @@ rangeSlider.prototype = {
         var c = this.canvas;
         this.lastActual = this.actual;
         this.lastCurrent = this.currentPosition;
-        this.lastClickY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
+        this.lastClickY = e.layerY - c.offsetTop;
         this.updatePosition();
     },
 
@@ -234,8 +235,7 @@ rangeSlider.prototype = {
         this.draggable = false;
         this.lastMove = 0;
         var c = this.canvas;
-        this.mouseY = e.layerY;
-        this.mouseY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
+        this.mouseY = e.layerY - c.offsetTop;
         if (Math.abs(this.mouseY - this.lastClickY) < 0.1) {
             var cursorDistance = this.getDistance(this.padding, this.currentPosition);
             var location = this.calculateUpdate(this.mouseY);
@@ -262,10 +262,8 @@ rangeSlider.prototype = {
         this.draw();
         e.stopPropagation();
         e.preventDefault();
-        this.mouseX = e.layerX;
-        this.mouseY = e.layerY;
-        this.mouseX = (e.targetTouches) ? e.targetTouches[0].layerX - c.offsetLeft : e.layerX - c.offsetLeft;
-        this.mouseY = (e.targetTouches) ? e.targetTouches[0].layerY - c.offsetTop : e.layerY - c.offsetTop;
+        this.mouseX = e.layerX - c.offsetLeft;
+        this.mouseY = e.layerY - c.offsetTop;
 
         if (!this.draggable) {
             this.lastActual = this.actual;
@@ -309,11 +307,98 @@ rangeSlider.prototype = {
         requestAnimationFrame(this.draw.bind(this));
     },
 
-    onTouchStart: function(e) {},
+    onTouchStart: function(e) {
+        this.draggable = true;
+        var c = this.canvas;
+        this.lastActual = this.actual;
+        this.lastCurrent = this.currentPosition;
+        this.lastClickY = e.touches[0].clientY - c.offsetTop;
+        this.updatePosition();
+    },
 
-    onTouchEnd: function(e) {},
+    onTouchEnd: function(e) {
+        this.pinch_dist = null;
+        this.draggable = false;
+        this.lastMove = 0;
+        var c = this.canvas;
+        if(e.changedTouches.length === 1) {
+            this.mouseX = e.changedTouches[0].clientX - c.offsetLeft;
+            this.mouseY = e.changedTouches[0].clientY - c.offsetTop;
+            if (Math.abs(this.mouseY - this.lastClickY) < 0.1) {
+                var cursorDistance = this.getDistance(this.padding, this.currentPosition);
+                var location = this.calculateUpdate(this.mouseY);
+                var dialog = "Are you sure you want to move the reticule to (" + location.toFixed(3) + ")?";
+                if (cursorDistance <= 20) {
+                    this.centerCursor();
+                } else {
+                    $.confirm({
+                        text: dialog,
+                        confirm: function() {
+                            this.updateFromPosition(location);
+                        }.bind(this),
+                        cancel: function() {
+                            // nothing to do
+                        }
+                    });
+                }
+            }
+        }
+        this.updatePosition();
+    },
 
-    onTouchMove: function(e) {},
+    onTouchMove: function(e) {
+        var c = this.canvas;
+        this.draw();
+        e.stopPropagation();
+        e.preventDefault();
+        
+        if (e.touches.length === 1) {
+
+            this.mouseX = e.touches[0].clientX - c.offsetLeft;
+            this.mouseY = e.touches[0].clientY - c.offsetTop;
+
+            if (!this.draggable) {
+                this.lastActual = this.actual;
+                this.draw();
+            } else {
+                var cursorDistance = this.getDistance(this.padding, this.currentPosition);
+                var moveDistance = Math.abs(this.mouseY - this.lastClickY);
+                var moveDiff = moveDistance - this.lastMove;
+                var pixelCompensation = (this.maxZ - this.minZ) / (this.height - this.padding);
+
+                if (cursorDistance <= 20) {
+                    this.update(this.mouseY);
+                    return;
+                } else {
+                    if (this.mouseY < this.lastClickY && this.checkSlideBoundaries(moveDiff * pixelCompensation, true)) {
+                        this.maxZ -= moveDiff * pixelCompensation;
+                        this.minZ -= moveDiff * pixelCompensation;
+                        this.updatePosition();
+                    } else {
+                        if (this.checkSlideBoundaries(moveDiff * pixelCompensation, false)) {
+                            this.minZ += moveDiff * pixelCompensation;
+                            this.maxZ += moveDiff * pixelCompensation;
+                            this.updatePosition();
+                        }
+                    }
+                }
+                this.lastMove = moveDistance;
+            }
+
+        } else if (e.touches.length === 2) {
+            // handle zoom
+            var ax = e.touches[0].clientX - c.offsetLeft;
+            var bx = e.touches[1].clientX - c.offsetLeft;
+            var ay = e.touches[0].clientY - c.offsetTop;
+            var by = e.touches[1].clientY - c.offsetTop;
+            var distance = this.dist(ax, ay, bx, by);
+            if (this.pinch_dist != null) {
+                var factor = distance - this.pinch_dist;
+                this.handleZoom(factor);
+            }
+            this.pinch_dist = distance;
+        }
+    },
 
     onFocus: function(e) {},
 
@@ -330,7 +415,7 @@ rangeSlider.prototype = {
 
     checkZoomBoundaries: function(amount) {
         if ((this.actual > this.minZ + amount) && (this.actual < this.maxZ - amount)) return true;
-        else return false;
+        return false;
     },
 
     checkSlideBoundaries: function(amount, max) {
@@ -349,6 +434,10 @@ rangeSlider.prototype = {
         ys = py - this.mouseY;
         ys = ys * ys;
         return Math.sqrt(xs + ys);
+    },
+    
+    dist: function(ax, ay, bx, by) {
+        return Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
     },
 
     setSnap: function(state) {
