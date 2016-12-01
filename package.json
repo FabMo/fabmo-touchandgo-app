@@ -1,11 +1,17 @@
 {
-	"name":"Touch and Go",
-	"main":"./index.html",
-	"icon":"icon.png",
-	"icon_color":"gray",
-	"version":"0.0.1",
+	"name":"Touch-and-Go",
 	"author":"Ryan Sturmer",
+	"main":"./index.html",
+	"license":"MIT",
+	"repository":"https://github.com/FabMo/fabmo-touchandgo-app.git",
+	"icon":"icon.png",
+	"icon_color":"#687C85",
+	"version":"1.0.1",
 	"website":"http://www.ryansturmer.com",
 	"description":"Quick tool navigation using a clickable/touchable interface.",
-	"id":"fabmo-touchandgo"
+	"id":"fabmo-touchandgo",
+	"devDependencies": {
+	    "grunt": "^0.4.5",
+	    "grunt-zip": "^0.17.1"
+  	}
 }

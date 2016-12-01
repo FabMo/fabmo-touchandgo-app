@@ -21,11 +21,12 @@
     
     <script src="js/jquery.js"></script>    
     <script src="js/bootstrap.min.js"></script>
-    <script src="js/dashboard.js"></script>
     <script src="js/tooldisplay.js"></script>
     <script src="js/jquery.confirm.min.js"></script>
-
+    <script src="js/fabmo.js"></script>
+    
     <script type="text/javascript">
+      var fabmo = new FabMoDashboard();
         var display;
         var state = {
           snap : 'false'
@@ -95,7 +96,7 @@
             tableColor : '#FFFF99'
           });
 
-          fabmoDashboard.on('status', function(status) {
+          fabmo.on('status', function(status) {
             x = status.posx;
             y = status.posy;
             if(x != undefined && y != undefined) {
@@ -103,9 +104,9 @@
             }
           });
 
-          fabmoDashboard.requestStatus();
+          fabmo.requestStatus();
 
-          fabmoDashboard.getConfig(function(err, cfg) {
+          fabmo.getConfig(function(err, cfg) {
             try {
               if(cfg.machine.envelope) {
                 display.setExtents(cfg.machine.envelope);
@@ -125,7 +126,7 @@
             gcode = [ /*'G54',*/
             'G0 X' + pos.x.toFixed(5) + ' Y' + pos.y.toFixed(5)
             ].join('\n');
-            fabmoDashboard.runGCode(gcode);
+            fabmo.runGCode(gcode);
           });
 
           window.addEventListener('resize', resizeCanvas);
