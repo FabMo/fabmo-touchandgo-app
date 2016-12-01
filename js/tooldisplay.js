@@ -313,18 +313,14 @@ function midpoint(a,b) {
           this.goto(this.getToolPosition(), 1000);
       }
       else {
-      $.confirm({
-        text: "Move the tool?",
-        confirm: function() {
-            event = {}
-            event.pos = this.mouseToActual(mousePos);
-            event.snapPos = snap2d(event.pos, this.grid.minor);
-            this.emit('click', event);
-      }.bind(this),
-        cancel: function() {
-            // nothing to do
-        }
-      });
+          this.doConfirm({ text : 'Move the tool?'}, 
+            function() {
+              event = {}
+              event.pos = this.mouseToActual(mousePos);
+              event.snapPos = snap2d(event.pos, this.grid.minor);
+              this.emit('click', event);
+            }.bind(this)
+          );
      }
     }
       this.dragging = false;
@@ -798,4 +794,8 @@ function midpoint(a,b) {
 
   Grid.prototype.clearExtents = function() {
     this.extents = null;
+  }
+
+  Grid.prototype.setConfirm = function(confirm) {
+    this.confirm = confirm;
   }
