@@ -133,6 +133,7 @@ function midpoint(a,b) {
     this.minScale = 10;
     this.maxScale = 10000;
     this.snap = false;
+    this.confirm = false;
 
     for(key in options) {
       this.options[key] = options[key];
@@ -177,6 +178,18 @@ function midpoint(a,b) {
         listener = listeners[i];
         listener(evt);
       }
+    }
+  }
+
+  Grid.prototype.doConfirm = function(options, f, g) {
+    if(this.confirm) {
+        $.confirm({
+            text: options.text,
+            confirm: f,
+            cancel: g || function() {}
+        });
+    } else {
+      f();
     }
   }
 
@@ -252,18 +265,14 @@ function midpoint(a,b) {
           this.goto(this.getToolPosition(), 1000);
         }
         else {
-        $.confirm({
-            text: "Move the tool?",
-            confirm: function() {
-                event = {}
-                event.pos = this.mouseToActual(touchPos);
-                event.snapPos = snap2d(event.pos, this.grid.minor);
-                this.emit('click', event);
-        }.bind(this),
-            cancel: function() {
-                // nothing to do
-            }
-        });
+          this.doConfirm({ text : 'Move the tool?'}, 
+            function() {
+              event = {}
+              event.pos = this.mouseToActual(touchPos);
+              event.snapPos = snap2d(event.pos, this.grid.minor);
+              this.emit('click', event);
+            }.bind(this)
+          );
         }
      }    
     } else if(evt.changedTouches.length === 2) {
@@ -775,7 +784,7 @@ function midpoint(a,b) {
   }
 
   Grid.prototype.getToolPosition = function() {
-    return this.toolPos;
+    return this.toolPos || {x:0,y:0};
   }
 
   Grid.prototype.setToolPosition = function(x,y) {

@@ -111,6 +111,9 @@
                 display.setExtents(cfg.machine.envelope);
                 display.gotoExtents(1000);
               }              
+              //if(cfg.machine.auth_input === 0) {
+                //display.setConfirm(true);
+              //}
             } catch(e) {
               console.error(e);
             }
@@ -118,7 +121,10 @@
 
           display.on('click', function(evt) {
             pos = state.snap ? evt.snapPos : evt.pos;
-            gcode = 'G0 X' + pos.x.toFixed(5) + ' Y' + pos.y.toFixed(5);
+
+            gcode = [ 'G54',
+            'G0 X' + pos.x.toFixed(5) + ' Y' + pos.y.toFixed(5)
+            ].join('\n');
             fabmoDashboard.runGCode(gcode);
           });
 
