@@ -6,7 +6,7 @@
 	"repository":"https://github.com/FabMo/fabmo-touchandgo-app.git",
 	"icon":"icon.png",
 	"icon_color":"#687C85",
-	"version":"1.0.1",
+	"version":"1.0.2",
 	"website":"http://www.ryansturmer.com",
 	"description":"Quick tool navigation using a clickable/touchable interface.",
 	"id":"fabmo-touchandgo",

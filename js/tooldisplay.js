@@ -687,6 +687,7 @@ function midpoint(a,b) {
     var dx = xf - x0;
     var dy = yf - y0;
 
+
     function animate() {
       var t = new Date().getTime();
       var ts = (t - t0) / duration;
@@ -694,7 +695,7 @@ function midpoint(a,b) {
       var x = x0 + dx*EasingFunction(ts);
       var y = y0 + dy*EasingFunction(ts);
       var scale = s0 + ds*EasingFunction(ts);
-      
+
       if(ts >= 1.0) {
         this.offset.x = xf;
         this.offset.y = yf;
